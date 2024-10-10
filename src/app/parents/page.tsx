@@ -8,14 +8,13 @@ import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { store } from "@/hooks/store";
 import axiosInstance from "@/config/instanceAxios";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import React from "react";
 import Link from "next/link";
 import { deleteParentThunk, getAllParentsThunk } from "@/lib/services/parent/parent";
 import { setting } from "@/config/setting";
+import UpdateParent from "./updateParent/page";
 
 interface ParentType {
   _id: string;
@@ -68,101 +67,110 @@ const { playerDetails } = useAppSelector((state) => state.player);
 const [players, setPlayers] = useState<PlayerType | any>(playerDetails);
 
 
-const {
-  register: update,
-  reset,
-  control,
-  handleSubmit: handleUpdateParent,
-  reset: resetUpdateParentForm,
-  formState: { errors }, // Added to retrieve errors
+const { reset: resetUpdateParentForm,
 } = useForm<UpdateParentFormData>({});
 
+// Fonction pour fetcher les parents
 const fetchParents = useCallback(async () => {
   setIsLoading(true);
-  await dispatch(getAllParentsThunk(undefined)).then((res) => {
-    if (res.meta.requestStatus === "fulfilled") {
-      setParents(res?.payload);
-      setIsLoading(false);
-    }
-  });
+  const res = await dispatch(getAllParentsThunk(undefined));
+  if (res.meta.requestStatus === "fulfilled") {
+    setParents(res.payload);
+  }
+  setIsLoading(false);
 }, [dispatch]);
 
+// Consolidation de `useEffect` pour éviter des appels répétitifs à `fetchParents`
 useEffect(() => {
-  fetchParents();
+  fetchParents(); // Appel une seule fois pour fetcher les parents
 }, [fetchParents]);
 
+// Fetch les joueurs pour chaque parent
+useEffect(() => {
+  if (parents) {
+    const fetchPlayersForParents = async () => {
+      if (Array.isArray(parents)) {
+        const newPlayers: Record<string, PlayerType[]> = {};
+
+        for (const parent of parents) {
+          if (parent.childIds && parent.childIds.length > 0) {
+            const fetchedPlayers = await fetchPlayers(parent.childIds);
+            newPlayers[parent._id] = fetchedPlayers;
+          }
+        }
+        setPlayers(newPlayers);
+      }
+    };
+    fetchPlayersForParents();
+  }
+}, [parents]);
+
+// Fonction pour fetcher les joueurs
 const fetchPlayers = async (playerIds: string[]): Promise<PlayerType[]> => {
-  console.log("Fetching players with IDs:", playerIds);
   try {
     const playerPromises = playerIds.map(async (id) => {
       const res = await axiosInstance.get(`players/${id}`);
-      console.log(`Player data for ID ${id}:`, res.data);
       return res.data;
     });
 
-    const players = await Promise.all(playerPromises);
-    return players;
+    return await Promise.all(playerPromises);
   } catch (error) {
     console.error("Error fetching players:", error);
     return [];
   }
 };
 
-useEffect(() => {
-  const fetchPlayersForParents = async () => {
-    console.log("Fetching players for coaches:", parents);
-    const newPlayers: Record<string, PlayerType[]> = {};
-
-    for (const parent of parents) {
-      console.log("Processing parent:", parent);
-      console.log("Player IDs for parent:", parent.childIds);
-      if (parent.childIds && parent.childIds.length > 0) {
-        const fetchedPlayers = await fetchPlayers(parent.childIds);
-        newPlayers[parent._id] = fetchedPlayers;
-      } else {
-        console.log(`No players for parent ${parent._id}`);
-      }
-    }
-
-    setPlayers(newPlayers);
-    console.log("Updated players state:", newPlayers);
-  };
-
-  
-}, [parents]);
-
-// Function to get player names
+// Fonction pour obtenir les noms des joueurs
 const getPlayersNames = (childIds: string[]): string[] => {
-  return childIds.map((id) => {
-    const player = players.find((p: { _id: string; }) => p._id === id); // Ensure players is an array
-    return player ? player.firstName : "Non trouvé";
-  });
+  if (players) {
+    const playersFlat = Object.values(players).flat() as PlayerType[];
+    return childIds.map((id) => {
+      const player = playersFlat.find((p) => p._id === id);
+      return player ? `${player.firstName} ${player.lastName}` : "Non trouvé";
+    });
+  }
+  return childIds.map(() => "Non trouvé");
 };
 
+// Fonction pour supprimer un parent
+const handleDelete = async (parentId: string) => {
+  await dispatch(deleteParentThunk(parentId));
+  setParents((prev: any[]) => prev.filter((c) => c._id !== parentId));
+  setAlertMessage("Le parent a été supprimé avec succès.");
+  setSuccessShowAlert(true);
+};
 
-  
-  const handleDelete = async (parentId: string) => {
-    await dispatch(deleteParentThunk(parentId));
-    setParents((prev: any[]) => prev.filter((c) => c._id !== parentId));
-    setAlertMessage("La catégorie a été supprimée avec succès.");
-    setSuccessShowAlert(true);
-  };
+// Fonction pour éditer un parent
+const handleEdit = async (parent: ParentType) => {
+  setSelectedParent(parent);
+  setOpen(true);
+  try {
+    const parentData = await axiosInstance.get(`parents/${parent._id}`);
+    resetUpdateParentForm({
+      _id: parentData.data._id,
+      firstName: parentData.data.firstName,
+      lastName: parentData.data.lastName,
+      phone1: parentData.data.phone1,
+      phone2: parentData.data.phone2,
+    });
+    fetchParents();
+  } catch (error) {
+    setAlertMessage("Erreur de récupération des données.");
+    setErrorShowAlert(true);
+  }
+};
 
-  const router = useRouter();
-  const handleEdit = (parent: ParentType) => {
-    router.push(`/parents/updateParent`);
-  };
-  
-  useEffect(() => {
-    if (showSuccessAlert || showErrorAlert) {
-      const timer = setTimeout(() => {
-        setSuccessShowAlert(false);
-        setErrorShowAlert(false);
-        setAlertMessage("");
-      }, 3000); // Alert shows for 3 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccessAlert, showErrorAlert]);
+// Consolidation du gestionnaire d'alertes pour éviter des répétitions
+useEffect(() => {
+  if (showSuccessAlert || showErrorAlert) {
+    const timer = setTimeout(() => {
+      setSuccessShowAlert(false);
+      setErrorShowAlert(false);
+      setAlertMessage("");
+    }, 3000); // Affiche l'alerte pendant 3 secondes
+    return () => clearTimeout(timer);
+  }
+}, [showSuccessAlert, showErrorAlert]);
   
 
     return (
@@ -299,7 +307,7 @@ const getPlayersNames = (childIds: string[]): string[] => {
       <p className="text-black dark:text-white">{parent.phone2}</p>
     </div>
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-      <p className="text-black dark:text-white">{(parent.childIds).join(", ")}</p>
+      <p className="text-black dark:text-white">{getPlayersNames(parent.childIds).join(", ")}</p>
     </div>
     
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
@@ -344,6 +352,13 @@ const getPlayersNames = (childIds: string[]): string[] => {
 ))}
 
       </div>
+
+      {open && selectedParent && (
+        <UpdateParent
+          parent={selectedParent}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
         </DefaultLayout>
     );

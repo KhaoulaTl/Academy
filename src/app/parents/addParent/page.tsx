@@ -8,7 +8,6 @@ import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useForm } from 'react-hook-form';
-import { store } from "@/hooks/store";
 import { useRouter } from 'next/navigation';
 import { setting } from "@/config/setting";
 import { createParentThunk, getAllParentsThunk } from "@/lib/services/parent/parent";
@@ -45,45 +44,42 @@ const AddParent = () => {
   const router = useRouter();
 
 
-  const {
-    register,
-    reset,
-    handleSubmit: handleSubmitParent,
-    reset: resetAddParentForm,
-    formState: { errors }, // Added to retrieve errors
-  } = useForm<AddParentFormData>({
-    
-  });
+ // Form handling
+ const {
+  register,
+  reset,
+  handleSubmit: handleSubmitParent,
+  formState: { errors },
+} = useForm<AddParentFormData>();
 
-  const fetchParents = useCallback(async () => {
-    setIsLoading(true);
-    await dispatch(getAllParentsThunk(undefined)).then((res) => {
-      if (res.meta.requestStatus === "fulfilled") {
-        setParents(res?.payload);
-        setIsLoading(false);
-      } else {
-        console.log("Failed to fetch parents:", res);
-      }
+// Fetching parents
+const fetchParents = useCallback(async () => {
+  setIsLoading(true);
+  const res = await dispatch(getAllParentsThunk(undefined));
+  if (res.meta.requestStatus === "fulfilled") {
+    setParents(res?.payload);
+  } else {
+    console.log("Failed to fetch parents:", res);
+  }
+  setIsLoading(false);
+}, [dispatch]);
+
+useEffect(() => {
+  fetchParents();
+}, [fetchParents]);
+
+// Reset form when parents are updated
+useEffect(() => {
+  if (parents) {
+    reset({
+      firstName: parents.firstName || "",
+      lastName: parents.lastName || "",
+      phone1: parents.phone1 || "",
+      phone2: parents.phone2 || "",
+      childIds: parents.childIds || [],
     });
-  }, [dispatch]);
-
-  useEffect(() => {
-    fetchParents();
-  }, [fetchParents]);
-
-
-  useEffect(() => {
-    if (parents) {
-      reset({
-        firstName: parents.firstName || "",
-        lastName: parents.lastName || "",
-        phone1: parents.phone1 || "",
-        phone2: parents.phone2 || "",
-        childIds: parents.childIds || [],
-      
-      });
-    }
-  }, [parents, reset]);
+  }
+}, [parents, reset]);
 
   const handleAddParent = async (data: AddParentFormData) => {
     setIsLoading(true);
@@ -119,7 +115,7 @@ const AddParent = () => {
         setIsLoading(false);
       }
 
-      resetAddParentForm();
+      reset();
     });
   };
 
@@ -133,6 +129,13 @@ const AddParent = () => {
       return () => clearTimeout(timer);
     }
   }, [showSuccessAlert, showErrorAlert]);
+
+  const handleCancel = () => {
+    // Optionnel : réinitialiser le formulaire si nécessaire
+    reset();
+    // Retourner à la page précédente
+    router.back();
+  };
 
   return (
     <DefaultLayout>
@@ -377,6 +380,7 @@ const AddParent = () => {
                       className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
                       type="submit"
                       disabled={isLoading}
+                      onClick={handleCancel}
                     >
                       {isLoading ? "Chargement..." : "Annuler"}
                     </button>

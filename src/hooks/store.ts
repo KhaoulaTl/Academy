@@ -55,9 +55,11 @@ const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Désactiver la vérification de la sérialisation
+      serializableCheck: false, // Disables the serialization check
+      immutableCheck: false,   // Disables the immutability check
     }),
 });
+
 
 const persistor = persistStore(store);
 

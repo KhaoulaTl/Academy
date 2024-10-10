@@ -1,10 +1,18 @@
 import flatpickr from "flatpickr";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-const DatePickerTwo = () => {
+interface DatePickerOneProps {
+  onDateChange: (date: Date | null) => void;
+}
+
+const DatePickerTwo: React.FC<DatePickerOneProps> = ({ onDateChange }) => {
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     // Init flatpickr
-    flatpickr(".form-datepicker", {
+    if (dateInputRef.current) {
+      // Init flatpickr
+      flatpickr(dateInputRef.current, {
       mode: "single",
       static: true,
       monthSelectorType: "static",
@@ -13,16 +21,22 @@ const DatePickerTwo = () => {
         '<svg className="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" /></svg>',
       nextArrow:
         '<svg className="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0l5.4 5.4z" /></svg>',
+        onChange: (selectedDates) => {
+          if (selectedDates.length > 0) {
+            onDateChange(selectedDates[0]); // Pass the selected date to the parent
+          } else {
+            onDateChange(null);
+          }
+        },
     });
-  }, []);
+  }
+  }, [onDateChange]);
 
   return (
     <div>
-      <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-        Select date
-      </label>
       <div className="relative">
         <input
+         ref={dateInputRef}
           className="form-datepicker w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           placeholder="mm/dd/yyyy"
           data-class="flatpickr-right"

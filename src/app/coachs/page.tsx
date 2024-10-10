@@ -8,7 +8,6 @@ import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { store } from "@/hooks/store";
 import { deleteCoachThunk, getAllCoachesThunk } from "@/lib/services/coach/coach";
 import axiosInstance from "@/config/instanceAxios";
 import { useForm } from "react-hook-form";
@@ -26,12 +25,6 @@ interface CoachType {
   playerIds: string[];
 }
 
-interface CategoryType {
-  _id: string;
-  name: string;
-  birthYears: number[];
-  isActive: boolean;
-}
 
 interface PlayerType {
   _id: string;
@@ -42,7 +35,6 @@ interface PlayerType {
   coachId: string;
   categoryId: string;
 }
-
 
 
 interface UpdateCoachFormData {
@@ -59,8 +51,6 @@ const Coaches  = () => {
 const [isLoading, setIsLoading] = useState<boolean>(false);
 const [open, setOpen] = useState(false);
 const { coachDetails } = useAppSelector((state) => state.coach);
-const { categoryDetails } = useAppSelector((state) => state.category);
-const [categories, setCategories] = useState<CategoryType | any>(categoryDetails);
 const [coaches, setCoaches] = useState<CoachType | any>(coachDetails);
 const [selectedCoach, setSelectedCoach] = useState<CoachType | null>(null);
 
@@ -75,17 +65,50 @@ const [players, setPlayers] = useState<Record<string, PlayerType[]>>({});
 
 
 const {
-  register: update,
-  reset,
-  control,
-  handleSubmit: handleUpdateCoach,
   reset: resetUpdateCoachForm,
-  formState: { errors }, // Added to retrieve errors
 } = useForm<UpdateCoachFormData>({
   defaultValues: {
     ageCategory: []
   }
 });
+
+const fetchCoachs = useCallback(async () => {
+  setIsLoading(true);
+  await dispatch(getAllCoachesThunk(undefined)).then((res) => {
+    if (res.meta.requestStatus === "fulfilled") {
+      setCoaches(res?.payload);
+      setIsLoading(false);
+    }
+  });
+}, [dispatch]);
+
+
+  useEffect(() => {
+    fetchCoachs();
+  }, [fetchCoachs]);
+
+
+  
+useEffect(() => {
+  const fetchPlayersForCoaches = async () => {
+    
+    if (Array.isArray(coaches)) {
+      const newPlayers: Record<string, PlayerType[]> = {};
+    
+      for (const coach of coaches) {
+      if (coach.playerIds && coach.playerIds.length > 0) {
+        const players = await fetchPlayers(coach.playerIds);
+        newPlayers[coach._id] = players;
+      } else {
+        console.log(`No players for coach ${coach._id}`);
+      }
+    }
+
+    setPlayers(newPlayers);
+  };
+    fetchPlayersForCoaches();
+  }
+}, [coaches]);
 
 
 
@@ -104,59 +127,7 @@ const fetchPlayers = async (playerIds: string[]): Promise<PlayerType[]> => {
 };
 
 
-useEffect(() => {
-  const fetchPlayersForCoaches = async () => {
-    const newPlayers: Record<string, PlayerType[]> = {};
-
-    for (const coach of coaches) {
-      if (coach.playerIds && coach.playerIds.length > 0) {
-        const players = await fetchPlayers(coach.playerIds);
-        newPlayers[coach._id] = players;
-      } else {
-        console.log(`No players for coach ${coach._id}`);
-      }
-    }
-
-    setPlayers(newPlayers);
-  };
-
-  if (coaches && coaches.length > 0) {
-    fetchPlayersForCoaches();
-  }
-}, [coaches]);
-
-
-
-
-const fetchCoachs = useCallback(async () => {
-  setIsLoading(true);
-  await dispatch(getAllCoachesThunk(undefined)).then((res) => {
-    if (res.meta.requestStatus === "fulfilled") {
-      setCoaches(res?.payload);
-      setIsLoading(false);
-    }
-  });
-}, [dispatch]);
-
-
-  useEffect(() => {
-    fetchCoachs();
-  }, [coaches]);
-
-// Fonction pour récupérer les noms des catégories par ID
-const getCategoryNames = (categoryIds: string[]): string[] => {
-  return categoryIds.map((id) => {
-    const category = categories.find((cat: { _id: string; }) => cat._id === id);
-    return category ? category.name : "Non trouvé";
-  });
-};
-
-const getPlayersByCategory = (coachId: string, categoryId: string) => {
-  const playersInCategory = players[coachId]?.filter(player => player.categoryId === categoryId);
-  return playersInCategory?.length || 0;
-};
-
-
+const [category, setCategory] = useState<string[]>([]);  
 
   
   const handleDelete = async (coachId: string) => {
@@ -180,6 +151,8 @@ const getPlayersByCategory = (coachId: string, categoryId: string) => {
         phone: coachData.data.phone,
         ageCategory: coachData.data.ageCategory,
       });
+
+      setCategory(coachData.data.ageCategory || []);
       fetchCoachs();
 
     } catch (error) {

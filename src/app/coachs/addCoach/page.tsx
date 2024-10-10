@@ -8,7 +8,6 @@ import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { FormProvider, useForm } from 'react-hook-form';
-import { store } from "@/hooks/store";
 import { createCoachThunk, getAllCoachesThunk } from "@/lib/services/coach/coach";
 import MultiSelect from "@/components/FormElements/MultiSelect";
 import { useRouter } from 'next/navigation';
@@ -66,7 +65,6 @@ const Coach = () => {
     reset,
     control,
     handleSubmit: handleSubmitCoach,
-    reset: resetAddCoachForm,
     formState: { errors }, // Added to retrieve errors
   } = useForm<AddCoachFormData>({
     defaultValues: {
@@ -76,15 +74,14 @@ const Coach = () => {
 
   const fetchCoaches = useCallback(async () => {
     setIsLoading(true);
-    await dispatch(getAllCoachesThunk(undefined)).then((res) => {
+    const res = await dispatch(getAllCoachesThunk(undefined));
       if (res.meta.requestStatus === "fulfilled") {
         setCoaches(res?.payload);
-        setIsLoading(false);
       } else {
         console.log("Failed to fetch coaches:", res);
       }
-    });
-  }, [dispatch]);
+      setIsLoading(false);
+}, [dispatch]);
 
   useEffect(() => {
     fetchCoaches();
@@ -92,6 +89,8 @@ const Coach = () => {
 
 
   useEffect(() => {
+    
+    
     if (coaches) {
       reset({
         firstName: coaches.firstName || "",
@@ -101,7 +100,18 @@ const Coach = () => {
         playerIds: coaches.playerIds || [],
       });
     }
-  }, [coaches, reset]);
+  
+    if (showSuccessAlert || showErrorAlert) {
+      const timer = setTimeout(() => {
+        setSuccessShowAlert(false);
+        setErrorShowAlert(false);
+        setAlertMessage("");
+      }, 3000);
+      return () => clearTimeout(timer);
+
+    }
+  }, [coaches, reset, showSuccessAlert, showErrorAlert]);
+  
 
   const handleAddCoach = async (data: AddCoachFormData) => {
     setIsLoading(true);
@@ -112,52 +122,47 @@ const Coach = () => {
       ageCategory: data.ageCategory,
     };
 
-
-    dispatch(createCoachThunk(coachData)).then(async (res) => {
+      const res = await dispatch(createCoachThunk(coachData)).then(async (res) => {
       if (res.meta.requestStatus === "fulfilled") {
         fetchCoaches();
         setAlertMessage("Un nouveau entraîneur a été créé avec succès.");
         setSuccessShowAlert(true);
-        setIsLoading(false);
-        // Réinitialise les valeurs du formulaire
-      reset({
-        firstName: "",
-        lastName: "",
-        phone: "",
-        ageCategory: [],
-      });
+        reset({
+          firstName: "",
+          lastName: "",
+          phone: "",
+          ageCategory: [],
+        });
+        if (multiSelectRef.current) {
+          multiSelectRef.current.reset();
+        }
+        router.push(setting.routes.Coachs);
 
-      if (multiSelectRef.current) {
-        multiSelectRef.current.reset();
-      }
-      router.push(setting.routes.Coachs);
       } else {
         setAlertMessage("Échec de la création de l'entraîneur.");
-        setErrorShowAlert(true);
-        setIsLoading(false);
+        setErrorShowAlert(true);   
+        setIsLoading(false);  
+
       }
-
-      resetAddCoachForm();
-    });
+    reset();
+  });
   };
+  
 
-  useEffect(() => {
-    if (showSuccessAlert || showErrorAlert) {
-      const timer = setTimeout(() => {
-        setSuccessShowAlert(false);
-        setErrorShowAlert(false);
-        setAlertMessage ("");
-      }, 3000); // Alert shows for 2 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccessAlert, showErrorAlert]);
 
   const methods = useForm<AddCoachFormData>(); // Create methods from useForm
   useEffect(() => {
   }, [methods.watch("ageCategory")]);
 
+  const handleCancel = () => {
+    // Optionnel : réinitialiser le formulaire si nécessaire
+    reset();  
+    // Retourner à la page précédente
+    router.back();
+  };
+
   return (
-    <FormProvider {...methods}> y
+    <FormProvider {...methods}> 
     <DefaultLayout>
       <Breadcrumb pageName="Entraîneurs" />
 
@@ -381,9 +386,12 @@ const Coach = () => {
                       className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
                       type="submit"
                       disabled={isLoading}
+                      onClick={handleCancel}
+
                     >
                       {isLoading ? "Chargement..." : "Annuler"}
-                    </button>
+                  
+              </button>
                     </div>
               </form>
             </div>

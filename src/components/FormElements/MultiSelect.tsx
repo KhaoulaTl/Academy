@@ -1,7 +1,7 @@
 "use client";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { getAllCategoriesThunk } from "@/lib/services/category/category";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import { Control, useFormContext, useController } from "react-hook-form";
 
 interface Option {
@@ -24,7 +24,8 @@ interface CategoryType {
   isActive: boolean;
 }
 
-const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
+// Wrap the component with React.forwardRef to pass the ref to a DOM element
+const MultiSelect = forwardRef<HTMLDivElement, DropdownProps>(({ control, name }, ref) => {
   const [dropdownOptions, setDropdownOptions] = useState<Option[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [show, setShow] = useState(false);
@@ -46,8 +47,8 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
     const response = await dispatch(getAllCategoriesThunk(undefined));
     if (response.meta.requestStatus === "fulfilled") {
       const categories = response.payload;
-      setCategories(categories); // Mettez à jour les catégories ici
-      const newOptions: Option[] = categories.map((category: CategoryType) => ({
+      setCategories(categories);
+      const newOptions = categories.map((category: CategoryType) => ({
         value: category._id,
         text: category.name,
         selected: false,
@@ -60,28 +61,11 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
     fetchCategories();
   }, [fetchCategories]);
 
-  useEffect(() => {
-    const loadOptions = () => {
-      if (categories && categories.length > 0) {
-        const newOptions: Option[] = categories.map((category: { _id: any; name: any; }) => ({
-          value: category._id,
-          text: category.name,
-          selected: false,
-        }));
-        setDropdownOptions(newOptions);
-      }
-    };
-
-    loadOptions();
-  }, [categories]);
-
   const open = () => {
     setShow(true);
   };
 
-  const isOpen = () => {
-    return show === true;
-  };
+  const isOpen = () => show === true;
 
   const select = (index: number, event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const newOptions = [...dropdownOptions];
@@ -94,9 +78,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
       setSelected(selected.filter((i) => i !== index));
     }
 
-    const selectedValues = newOptions
-      .filter(option => option.selected)
-      .map(option => option.value);
+    const selectedValues = newOptions.filter((option) => option.selected).map((option) => option.value);
     setValue(name, selectedValues);
     onChange(selectedValues);
   };
@@ -107,10 +89,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
     setDropdownOptions(newOptions);
     setSelected(selected.filter((i) => i !== index));
 
-    const selectedValues = newOptions
-      .filter(option => option.selected)
-      .map(option => option.value);
-
+    const selectedValues = newOptions.filter((option) => option.selected).map((option) => option.value);
     setValue(name, selectedValues);
     onChange(selectedValues);
   };
@@ -129,7 +108,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
   }, [show]);
 
   return (
-    <div className="relative z-50">
+    <div ref={ref} className="relative z-50">
       <div>
         <div className="flex flex-col items-center">
           <div className="relative z-20 inline-block w-full">
@@ -242,8 +221,8 @@ const MultiSelect: React.FC<DropdownProps> = ({ control, name }) => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
   );
-};
+});
 
 export default MultiSelect;

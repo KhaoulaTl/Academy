@@ -1,3 +1,4 @@
+import Player from "@/app/players/addPlayer/page";
 
 export const setting = {
     roles: {
@@ -14,6 +15,7 @@ export const setting = {
         Category : "/category",
         AddParent: "parents/addParent",
         Parents: "/parents",
-        
+        AddPlayer: "/players/addPlayer",
+        Players: "/players",
     }
 }
