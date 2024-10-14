@@ -11,6 +11,7 @@ import { ParentModule } from './parent/parent.module';
 import { PlayerModule } from './player/player.module';
 import { CoachModule } from './coach/coach.module';
 import { CategoryModule } from './category/category.module';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { CategoryModule } from './category/category.module';
     ParentModule,
     PlayerModule,
     CoachModule,
-    CategoryModule
+    CategoryModule,
+    EventModule
   ],
   controllers: [AppController],
   providers: [AppService],
