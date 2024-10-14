@@ -15,6 +15,7 @@ import Link from "next/link";
 import { deleteParentThunk, getAllParentsThunk } from "@/lib/services/parent/parent";
 import { setting } from "@/config/setting";
 import UpdateParent from "./updateParent/page";
+import { PlayerType } from "@/types/types";
 
 interface ParentType {
   _id: string;
@@ -24,18 +25,6 @@ interface ParentType {
   phone2: string;
   childIds: string[];
 }
-
-
-interface PlayerType {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  birthDate: Date;
-  parentId: string;
-  coachId: string;
-  categoryId: string;
-}
-
 
 
 interface UpdateParentFormData {

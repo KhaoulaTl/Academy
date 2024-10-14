@@ -13,8 +13,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { createCategoryThunk, deleteCategoryThunk, getAllCategoriesThunk, updateCategoryThunk } from "@/lib/services/category/category";
-import { store } from "@/hooks/store";
 import dayjs, { Dayjs } from "dayjs";
+import { useRouter } from "next/navigation";
+import { CategoryType } from "@/types/types";
 
 
 interface AddCategoryFormData {
@@ -25,13 +26,6 @@ interface AddCategoryFormData {
 }
 
 interface UpdateCategoryFormData {
-  _id: string;
-  name: string;
-  birthYears: number[];
-  isActive: boolean;
-}
-
-interface CategoryType {
   _id: string;
   name: string;
   birthYears: number[];
@@ -238,7 +232,13 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
     }
   }, [showSuccessAlert, showErrorAlert]);
   
-
+  const router = useRouter();
+  
+  const handleCancel = () => {
+    reset();  
+    router.back();
+    setErrorShowAlert(false); 
+  };
   
   return (
     <DefaultLayout>
@@ -305,10 +305,22 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
                 </LocalizationProvider>
               </div>
             </div>
+            <div className="flex justify-end gap-4.5">
 
-            <button className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-              Ajouter la tranche d'âge
+            <button
+            disabled={isLoading}
+            className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+              {isLoading ? "Chargement..." :  "Ajouter la tranche d'âge"}
             </button>
+            <button
+                    className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
+                    type="submit"
+                    disabled={isLoading}
+                    onClick={handleCancel}
+                    >
+                    {isLoading ? "Chargement..." : "Annuler"}
+                    </button>
+                    </div>
           </div>
         </form>
       </div>
@@ -374,10 +386,22 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
               </LocalizationProvider>
             </div>
           </div>
+          <div className="flex justify-end gap-4.5">
 
-          <button className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-            Mettre à jour la tranche d'âge
+          <button 
+            disabled={isLoading}
+            className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+            {isLoading ? "Chargement..." :  "Mettre à jour la tranche d'âge"}
           </button>
+          <button
+            className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
+            type="submit"
+            disabled={isLoading}
+            onClick={handleCancel}
+            >
+              {isLoading ? "Chargement..." : "Annuler"}
+            </button>
+          </div>
         </div>
       </form>
     </div>

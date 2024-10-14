@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { setting } from "@/config/setting";
 import { createParentThunk, getAllParentsThunk } from "@/lib/services/parent/parent";
+import { ParentType } from "@/types/types";
 
 interface AddParentFormData {
     _id: string;
@@ -21,14 +22,6 @@ interface AddParentFormData {
     childIds: string[];
 }
 
-interface ParentType {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  phone1: string;
-  phone2: string;
-  childIds: string[];
-}
 
 
 const AddParent = () => {
@@ -135,6 +128,7 @@ useEffect(() => {
     reset();
     // Retourner à la page précédente
     router.back();
+    setErrorShowAlert(false); 
   };
 
   return (

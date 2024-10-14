@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form';
 import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
 import { getAllParentsThunk, updateParentThunk } from '@/lib/services/parent/parent';
+import { ParentType } from '@/types/types';
 
 interface UpdateParentFormData {
     _id: string;
@@ -20,14 +21,6 @@ interface UpdateParentFormData {
   }
   
 
-interface ParentType {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    phone1: string;
-    phone2: string;
-    childIds: string[];
-  }
   
 interface UpdateParentProps {
     parent: ParentType;
@@ -65,7 +58,6 @@ const UpdateParent = ({ parent, onClose }: UpdateParentProps) => {
       const {
         register: update,
         reset,
-        control,
         handleSubmit: handleUpdateParent,
         reset: resetUpdateParentForm,
         formState: { errors },
@@ -142,6 +134,9 @@ const UpdateParent = ({ parent, onClose }: UpdateParentProps) => {
         }
       };
 
+      useEffect(() => {
+        fetchParents();
+      }, []); 
 
     useEffect(() => {
         if (showSuccessAlert || showErrorAlert) {

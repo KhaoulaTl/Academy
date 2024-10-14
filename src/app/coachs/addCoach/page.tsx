@@ -12,17 +12,9 @@ import { createCoachThunk, getAllCoachesThunk } from "@/lib/services/coach/coach
 import MultiSelect from "@/components/FormElements/MultiSelect";
 import { useRouter } from 'next/navigation';
 import { setting } from "@/config/setting";
+import { CoachType } from "@/types/types";
 
 interface AddCoachFormData {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  ageCategory: string[];
-  playerIds: string[];
-}
-
-interface CoachType {
   _id: string;
   firstName: string;
   lastName: string;
@@ -159,6 +151,7 @@ const Coach = () => {
     reset();  
     // Retourner à la page précédente
     router.back();
+    setErrorShowAlert(false); 
   };
 
   return (

@@ -74,9 +74,9 @@ const menuGroups = [
         icon: (
           <svg 
           className="fill-current"
-            width="20"
-            height="25"
-            viewBox="0 0 30 30"
+          width="25"
+          height="25"
+          viewBox="0 0 43 43"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             >
@@ -232,7 +232,7 @@ const menuGroups = [
 
         ),
         label: "Liste des Footballeurs",
-        route: "#",
+        route: "/players",
         children: [
           { 
             label: "Par coach", 

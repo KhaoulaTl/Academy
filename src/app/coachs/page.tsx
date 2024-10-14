@@ -15,26 +15,8 @@ import React from "react";
 import Link from "next/link";
 import UpdateCoach from './updateCoach/page';
 import { setting } from "@/config/setting";
+import { CoachType, PlayerType } from "@/types/types";
 
-interface CoachType {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  ageCategory: string[];
-  playerIds: string[];
-}
-
-
-interface PlayerType {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  birthDate: Date;
-  parentId: string;
-  coachId: string;
-  categoryId: string;
-}
 
 
 interface UpdateCoachFormData {
