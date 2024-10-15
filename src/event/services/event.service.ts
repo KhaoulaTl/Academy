@@ -33,6 +33,9 @@ export class EventService {
   }
 
   async remove(id: string): Promise<void> {
+    if (!id) {
+      throw new Error('Event ID is required');
+    }
     const result = await this.eventModel.findByIdAndDelete(id).exec();
     if (!result) {
       throw new NotFoundException(`Event #${id} not found`);

@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put } from '@nestjs/common';
 import { EventService } from '../services/event.service';
 @Controller('events')
 export class EventController {
@@ -21,7 +21,7 @@ export class EventController {
     return this.eventService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(@Param('id') id: string, @Body() updateEventDto: any) {
     return this.eventService.update(id, updateEventDto);
   }
