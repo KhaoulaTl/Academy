@@ -33,3 +33,10 @@ export interface ParentType {
     coachId: string;
     skillLevel: string;
   }
+
+  export interface EventType {
+    _id: string;
+    name: string;
+    date: Date;
+    location: string;
+  }

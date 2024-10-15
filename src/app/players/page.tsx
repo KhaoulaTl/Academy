@@ -228,7 +228,7 @@ interface UpdatePlayerFormData {
                 
                 <div className=" border-stroke px-6.5 py-4 dark:border-strokedark">
                 <h4 className="font-medium text-black dark:text-white">
-                    Tous les footballeurs
+                    Tous les Footballeurs
                 </h4>
                 </div>
 

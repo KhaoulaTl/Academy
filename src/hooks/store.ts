@@ -8,6 +8,7 @@ import categorySlice from "@/lib/slices/category/category.slice";
 import coachSlice from "@/lib/slices/coach/coach.slice";
 import playerSlice from "@/lib/slices/player/player.slice";
 import parentSlice from "@/lib/slices/parent/parent.slice";
+import eventSlice from "@/lib/slices/event/event.slice";
 
 // Gestion du storage selon l'environnement
 const createNoopStorage = () => {
@@ -33,6 +34,7 @@ const reducers = combineReducers({
   coach: coachSlice,
   player: playerSlice,
   parent: parentSlice,
+  event: eventSlice,
 });
 
 const rootReducer = (state: any, action: any) => {
