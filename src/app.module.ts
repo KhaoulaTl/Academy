@@ -12,6 +12,7 @@ import { PlayerModule } from './player/player.module';
 import { CoachModule } from './coach/coach.module';
 import { CategoryModule } from './category/category.module';
 import { EventModule } from './event/event.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { EventModule } from './event/event.module';
     PlayerModule,
     CoachModule,
     CategoryModule,
-    EventModule
+    EventModule,
+    TransactionModule
   ],
   controllers: [AppController],
   providers: [AppService],
