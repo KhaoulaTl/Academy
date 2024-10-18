@@ -178,6 +178,8 @@ interface UpdatePlayerFormData {
     }, [showSuccessAlert, showErrorAlert]);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [coachId, setCoachId] = useState<string>('');
+    const [showPlayersByCoach, setShowPlayersByCoach] = useState(false);
 
     const filteredPlayers = Array.isArray(players) ? players.filter((player: { firstName: any; lastName: any; }) => {
       const playerName = `${player.firstName} ${player.lastName}`;
@@ -374,8 +376,15 @@ interface UpdatePlayerFormData {
                     </div>
 
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-                        <p className="hidden text-black dark:text-white sm:block">{getCoachNames(player.coachId)}</p>
-                    </div>
+      <Link href="#" onClick={(e) => {
+        e.preventDefault();
+        // Afficher le composant PlayersByCoach pour l'entraîneur sélectionné
+        setCoachId(player.coachId);
+        setShowPlayersByCoach(true);
+      }}>
+        {getCoachNames(player.coachId)}
+      </Link>
+    </div>
 
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
                         <p className="hidden text-black dark:text-white sm:block">{getCategoriesNames(player.categoryId)}</p>

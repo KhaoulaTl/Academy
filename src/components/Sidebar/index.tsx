@@ -236,7 +236,7 @@ const menuGroups = [
         children: [
           { 
             label: "Par coach", 
-            route: "/forms/form-elements" 
+            route: "/forms/form-elements" ,
           },
           { 
             label: "Par abonnement", 
