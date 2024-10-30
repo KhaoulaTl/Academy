@@ -1,4 +1,6 @@
 /* eslint-disable prettier/prettier */
+import { Role } from "src/auth/config/enum/role.enum";
+
 export interface IAdmin {
   _id?: number;
   firstName: string;
@@ -6,5 +8,5 @@ export interface IAdmin {
   email: string;
   password: string;
   newPassword?: string;
-  role: string;
+  role: Role[];
 }

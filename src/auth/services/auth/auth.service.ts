@@ -17,14 +17,14 @@ export class AuthService {
   // Validate user credentials
   async validateAdmin(email: string, password: string): Promise<IAdmin> {
     const admin = await this.adminService.findAdminByEmail(email);
+    console.log('Admin found:', admin);
     if (admin && await bcrypt.compare(password, admin.password)) {
-      // Exclude password and return the rest of the user details
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const result = omit(admin, ['password']);
-      return result;
+        console.log('Password match successful');
+        return omit(admin, ['password']);
     }
     throw new UnauthorizedException('Invalid credentials');
-  }
+}
+
 
   // Login user and generate JWT token
   async login(admin : any) {

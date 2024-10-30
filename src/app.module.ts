@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -13,6 +13,7 @@ import { CoachModule } from './coach/coach.module';
 import { CategoryModule } from './category/category.module';
 import { EventModule } from './event/event.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { AdminService } from './admin/services/admin/admin.service';
 
 @Module({
   imports: [
@@ -34,4 +35,10 @@ import { TransactionModule } from './transaction/transaction.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly adminService: AdminService) {}
+
+  async onModuleInit() {
+    await this.adminService.initializeDefaultAdmin();
+  }
+}

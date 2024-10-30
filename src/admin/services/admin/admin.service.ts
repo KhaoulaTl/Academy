@@ -6,18 +6,36 @@ import mongoose, { Model } from "mongoose";
 import { IAdmin } from "src/admin/models/admin/admin.model";
 import { Admin, AdminDocument } from "src/admin/schemas/admin/admin.schema";
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from "@nestjs/config";
+import { Role } from "src/auth/config/enum/role.enum";
 
 
 @Injectable()
 export class AdminService {
-  constructor(@InjectModel(Admin.name) private adminModel: Model<AdminDocument>) {}
+  constructor(@InjectModel(Admin.name) private adminModel: Model<AdminDocument>,  private configService: ConfigService,) {}
 
-  async createAdmin(admin: IAdmin): Promise<Admin> {
-    const existingAdmin = await this.findAdminByEmail(admin.email);
-    if (existingAdmin) {
-      throw new BadRequestException('Email is already in use.');
+  async initializeDefaultAdmin() {
+    const defaultEmail = this.configService.get<string>('DEFAULT_ADMIN_EMAIL');
+    const defaultPassword = this.configService.get<string>('DEFAULT_ADMIN_PASSWORD');
+
+    const existingAdmin = await this.findAdminByEmail(defaultEmail);
+    if (!existingAdmin) {
+      const defaultAdmin: IAdmin = {
+        firstName: 'Admin',
+        lastName: 'Adem Sport',
+        email: defaultEmail,
+        password: defaultPassword,
+        role: [Role.Admin],
+      };
+      await this.createAdmin(defaultAdmin);
+      console.log('Compte administrateur par défaut créé et sauvegardé dans la base de données');
+
+    } else {
+      console.log('L administrateur par défaut existe déjà.');
     }
-
+  }
+  
+  async createAdmin(admin: IAdmin): Promise<Admin> {
     const hashedPassword = await bcrypt.hash(admin.password, 10);
     const newAdmin = new this.adminModel({ ...admin, password: hashedPassword });
     return await newAdmin.save();
