@@ -154,7 +154,7 @@ const Academy: React.FC = () => {
             
 
             <Link
-              href="#"
+              href={setting.routes.AddTransaction}
               className="inline-flex items-center justify-center gap-2 bg-primary px-8 py-4 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-7"
             >
               <span>

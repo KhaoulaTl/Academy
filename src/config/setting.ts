@@ -1,4 +1,5 @@
 import Player from "@/app/players/addPlayer/page";
+import AddTransaction from "@/app/transaction/addTransaction/page";
 
 export const setting = {
     roles: {
@@ -17,5 +18,8 @@ export const setting = {
         Parents: "/parents",
         AddPlayer: "/players/addPlayer",
         Players: "/players",
+        AddTransaction: "/transaction/addTransaction",
+        TransactionHistory: "/transaction/transactionHistory",
+        Transactions: "/transaction",
     }
 }

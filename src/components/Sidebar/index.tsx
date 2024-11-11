@@ -279,7 +279,7 @@ const menuGroups = [
                     </svg>
         ),
         label: "Effectuer paiement",
-        route:"#",
+        route:"/transaction/addTransaction",
       },
       {
         icon : (

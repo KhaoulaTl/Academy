@@ -32,7 +32,7 @@ interface UpdatePlayerProps {
   const UpdatePlayer = ({ player, onClose }: UpdatePlayerProps) => {
     if (!player) return null;
 
-    const { playerDetails } = useAppSelector((state) => state.player);
+    const { playerDetails } = useAppSelector((state: { player: { playerDetails: null; submitplayer: null; loading: boolean; error: null; }; }) => state.player);
     const dispatch = useAppDispatch();
     const router = useRouter();
 

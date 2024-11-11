@@ -117,14 +117,13 @@ const handleAddPlayer = async (data: AddPlayerFormData) => {
                 setSuccessShowAlert(true);
                 setIsLoading(false);
                 reset({
-                    firstName: "",
-                    lastName: "",
-                    birthDate: "" || null,
-                    parentId:"",
-                    coachId:"",
-                    skillLevel:"",
-
-                });
+                  firstName: "",
+                  lastName: "",
+                  birthDate: null,
+                  parentId: "",
+                  coachId: "",
+                  skillLevel: "",
+              });
                 router.push(setting.routes.Players);
             } else {
                 console.log('Erreur lors de la création du joueur :', res);
@@ -224,7 +223,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
         </div>
         <br />
 
-        <div className="z-20 justify-center  w-400">
+        <div className="z-20">
             <div className="mb-5 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark ">
             <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
               <h3 className="font-medium text-black dark:text-white">
@@ -235,7 +234,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
             <div className="p-7">
                 <form onSubmit={handleSubmitPlayer(handleAddPlayer)}>
                     <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                        <div className="w-full sm:w-2/3">
+                        <div className="w-full sm:w-5/6">
                             <label
                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                             htmlFor="firstName"
@@ -284,7 +283,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
                         </div>
                         <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
 
-                        <div className="w-full sm:w-2/3">
+                        <div className="w-full sm:w-5/6">
                             <label
                                 className="mb-3 block text-sm font-medium text-black dark:text-white"
                                 htmlFor="lastName"
@@ -334,10 +333,10 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
 
                         <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
 
-                        <div className="w-full sm:w-2/3">
+                        <div className="w-full sm:w-5/6">
                             <label
                                 className="mb-3 block text-sm font-medium text-black dark:text-white"
-                                htmlFor="lastName"
+                                htmlFor="birthDate"
                             >
                             Date de naissance
                             </label>
@@ -350,7 +349,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
                     </div>
 
                     <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                        <div className="w-full sm:w-2/3">
+                        <div className="w-full sm:w-5/6">
 
                         <label
                         className="mb-3 block text-sm font-medium text-black dark:text-white"
@@ -361,7 +360,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
                         <div className="relative">
                         <SelectGroupOne
                         options={parents || []}
-                        value={coachId}
+                        value={parentId}
                         onChange={handleParentChange}
                         label="Sélectionner un parent"
                         />
@@ -370,7 +369,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
 </div>
 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
 
-                    <div className="w-full sm:w-2/3">
+                    <div className="w-full sm:w-5/6">
 
                         <label
                         className="mb-3 block text-sm font-medium text-black dark:text-white"
@@ -391,7 +390,7 @@ const parents = parentDetails && parentDetails.map((parent: { _id: any; firstNam
 
                     <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
                   
-                    <div className="w-full sm:w-2/3">
+                    <div className="w-full sm:w-5/6">
                         <label
                         className="mb-3 block text-sm font-medium text-black dark:text-white"
                         htmlFor="Niveau"

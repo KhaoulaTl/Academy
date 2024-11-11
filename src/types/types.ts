@@ -40,3 +40,20 @@ export interface ParentType {
     date: Date;
     location: string;
   }
+
+
+  export interface TransactionType {
+    _id: string;
+    playerId: string; 
+    subscriptionType: string;
+    durationInMonths: number;
+    amountPaid: number;
+    paymentDate: Date;
+    invoiceNumber: string;
+    paymentStatus: string;
+    dueDate: Date;
+    insurancePaid: boolean; 
+    insuranceAmount: number;
+    insurancePaymentDate: Date; 
+    paymentHistory: { amount: number; date: Date }[];
+  }
