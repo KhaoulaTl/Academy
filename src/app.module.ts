@@ -14,6 +14,8 @@ import { CategoryModule } from './category/category.module';
 import { EventModule } from './event/event.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { AdminService } from './admin/services/admin/admin.service';
+import { NotificationModule } from './notification/notification.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { AdminService } from './admin/services/admin/admin.service';
       isGlobal: true,
     }),
     MongooseModule.forRoot('mongodb://127.0.0.1:27017/academy'),
+    ScheduleModule.forRoot(),
     HttpModule, 
     AuthModule,
     AdminModule,
@@ -30,7 +33,8 @@ import { AdminService } from './admin/services/admin/admin.service';
     CoachModule,
     CategoryModule,
     EventModule,
-    TransactionModule
+    TransactionModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -17,7 +17,7 @@ export class Transaction extends Document {
   amountPaid: number;  // Montant payé
 
   @Prop({ required: true })
-  lastPaymentDate: Date;  // Date du paiement
+  PaymentDate: Date;  // Date du paiement
 
   @Prop({ required: true, unique: true })
   invoiceNumber: string;  // Numéro de facture unique
@@ -35,10 +35,10 @@ export class Transaction extends Document {
   insuranceAmount: number;  // Montant de l'assurance annuelle
 
   @Prop()
-  insurancePaymentDate: Date;  // Date de paiement de l'assurance (devrait être chaque septembre)
+  insurancePaymentDate: Date;  // Date de paiement de l'assurance
 
   @Prop({ default: [] })
-  paymentHistory: { amount: number; date: Date }[];  // Historique des paiements
+  paymentHistory: { amount: number; date: Date, invoiceNumber: string }[];  // Historique des paiements
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
