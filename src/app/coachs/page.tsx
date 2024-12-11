@@ -6,7 +6,7 @@
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { deleteCoachThunk, getAllCoachesThunk } from "@/lib/services/coach/coach";
 import axiosInstance from "@/config/instanceAxios";
@@ -16,6 +16,7 @@ import Link from "next/link";
 import UpdateCoach from './updateCoach/page';
 import { setting } from "@/config/setting";
 import { CoachType, PlayerType } from "@/types/types";
+import { Pagination } from "@mui/material";
 
 
 
@@ -159,6 +160,21 @@ const filteredCoaches = coaches.filter((coach: { firstName: any; lastName: any; 
   const coachName = `${coach.firstName} ${coach.lastName}`;
   return coachName.toLowerCase().includes(searchTerm.toLowerCase());
 });
+
+const handlePageChange = (event: any, value: SetStateAction<number>) => {
+  setCurrentPage(value);
+};
+
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 5; // Nombre d'éléments par page
+
+// Calcul des indices pour les items de la page actuelle
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentCoaches = filteredCoaches.slice(indexOfFirstItem, indexOfLastItem); // Utilisation de filteredCoaches ici
+
+const totalPages = Math.ceil(filteredCoaches.length / itemsPerPage);
+
 
     return (
         <DefaultLayout>
@@ -308,7 +324,7 @@ const filteredCoaches = coaches.filter((coach: { firstName: any; lastName: any; 
         </div>
       </div>
 
-        {filteredCoaches.map((coach: CoachType) => (
+        {currentCoaches.map((coach: CoachType) => (
 
   <div
     className={`grid grid-cols-6 sm:grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-6 2xl:px-7.5 ${
@@ -372,6 +388,16 @@ const filteredCoaches = coaches.filter((coach: { firstName: any; lastName: any; 
     </div>
   </div>
         ))}
+
+        {/* Pagination */}
+        <div className="flex justify-end mt-4 mb-4">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </div>
 
       </div>
       {open && selectedCoach && (

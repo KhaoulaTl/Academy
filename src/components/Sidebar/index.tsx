@@ -233,15 +233,6 @@ const menuGroups = [
         ),
         label: "Liste des Footballeurs",
         route: "/players",
-        children: [
-          { 
-            label: "Par coach", 
-            route: "/forms/form-elements" ,
-          },
-          { 
-            label: "Par abonnement", 
-            route: "/forms/form-elements" },
-        ],
       },
     ]
     },

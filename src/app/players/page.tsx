@@ -5,7 +5,7 @@
 
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import React from "react";
 import { setting } from "@/config/setting";
@@ -18,6 +18,7 @@ import { getAllCategoriesThunk } from "@/lib/services/category/category";
 import axiosInstance from "@/config/instanceAxios";
 import { useForm } from "react-hook-form";
 import UpdatePlayer from "./updatePlayer/page";
+import { Pagination } from "@mui/material";
 
 interface UpdatePlayerFormData {
     _id: string;
@@ -186,6 +187,23 @@ interface UpdatePlayerFormData {
       return playerName.toLowerCase().includes(searchTerm.toLowerCase());
     }) : [];
 
+    
+const handlePageChange = (event: any, value: SetStateAction<number>) => {
+  setCurrentPage(value);
+};
+
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 5; // Nombre d'éléments par page
+
+// Calcul des indices pour les items de la page actuelle
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentPlayers = filteredPlayers.slice(indexOfFirstItem, indexOfLastItem); // Utilisation de filteredCoaches ici
+
+const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
+
+
+
       return (
         <DefaultLayout>
             <Breadcrumb pageName="Footballeurs"/>
@@ -352,7 +370,7 @@ interface UpdatePlayerFormData {
             </div>
             </div>
 
-            {filteredPlayers.map((player) => (
+            {currentPlayers.map((player: PlayerType) => (
                 <div 
                 className={`grid grid-cols-8 sm:grid-cols-8 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-6 2xl:px-7.5 ${
                     players.length - 1 ? "" : "border-b border-stroke dark:border-strokedark"
@@ -366,9 +384,10 @@ interface UpdatePlayerFormData {
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
                         <p className="hidden text-black dark:text-white sm:block">{player.firstName}</p>
                     </div>
-
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-                        <p className="hidden text-black dark:text-white sm:block">{new Date(player.birthDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                    <p className="hidden text-black dark:text-white sm:block">
+                      {player.birthDate ? new Date(player.birthDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "Date non disponible"}
+                    </p>
                     </div>
 
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
@@ -433,6 +452,16 @@ interface UpdatePlayerFormData {
         </div>
         ))}
 
+{/* Pagination */}
+<div className="flex justify-end mt-4 mb-4">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </div>
+          
             </div>
             {open && selectedPlayer && (
         <UpdatePlayer

@@ -5,15 +5,14 @@
 
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
-import { setting } from "@/config/setting";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {  useForm } from 'react-hook-form';
 import { PlayerType, TransactionType } from "@/types/types";
 import SelectGroupOne from "@/components/SelectGroup/SelectGroupOne";
 import DatePickerOne from "@/components/FormElements/DatePicker/DatePickerOne";
-import { createTransactionThunk, payTransactionThunk } from "@/lib/services/transaction/transaction";
+import { createTransactionThunk, getAllTransactionsThunk, payTransactionThunk } from "@/lib/services/transaction/transaction";
 
 
 interface AddTransactionFormData {
@@ -42,21 +41,32 @@ interface AddTransactionFormData {
     const [showSuccessAlert, setSuccessShowAlert] = useState(false);
     const [showErrorAlert, setErrorShowAlert] = useState(false);
     const router = useRouter();
-    const [playerId, setPlayerId] = useState<any>();
+    
     const { playerDetails } : { playerDetails : PlayerType | any } = useAppSelector((state) => state.player);
+    const [playerId, setPlayerId] = useState<any>();
     const [isChecked, setIsChecked] = useState<boolean>(false);
     const [actionType, setActionType] = useState('create'); // 'create' or 'pay'
     const [PaymentDate, setPaymentDate] = useState<Date | null>(null);
     const [insurancePaymentDate, setInsurancePaymentDate] = useState<Date | null>(null);
 
     
-    const { register, reset, handleSubmit: handleSubmitTransaction, formState: {errors}, setValue
-    } = useForm<AddTransactionFormData>({defaultValues: {playerId:""}});
-
-    // Define the handleSubmitPayment
-const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
-
-    useEffect(() => {
+    const { register, reset, handleSubmit, formState: { errors }, setValue } = useForm<AddTransactionFormData>({
+        defaultValues: {
+          playerId: '',
+          
+        },
+      });
+      
+      const onSubmit = async (data: AddTransactionFormData) => {
+        if (actionType === 'create') {
+          handleAddTransaction(data);
+        } else {
+          handleAddPayment(data);
+        }
+      };
+      
+      useEffect(() => {
+        console.log('Transactions reçues du backend :', transactions);
         if (transactions) {
             reset({
                 playerId: transactions.playerId || "",
@@ -65,30 +75,50 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
                 amountPaid: transactions.amountPaid || "",
                 invoiceNumber: transactions.invoiceNumber || "",
                 paymentStatus: transactions.paymentStatus || "",
-                dueDate: transactions.dueDate || null,
+                dueDate: transactions.dueDate ? new Date(transactions.dueDate) : null,  // Vérifiez ici
                 insurancePaid: transactions.insurancePaid || false,
                 insuranceAmount: transactions.insuranceAmount || 0,
-                insurancePaymentDate: transactions.insurancePaymentDate || null,
-                paymentHistory: transactions.paymentHistory || []
+                insurancePaymentDate: transactions.insurancePaymentDate ? new Date(transactions.insurancePaymentDate) : null,
+                paymentHistory: transactions.paymentHistory || [],
+                PaymentDate: transactions.PaymentDate ? new Date(transactions.PaymentDate) : null
             });
         }
-    })
+    }, [transactions]);
+    
+    
+
+    useEffect(() => {
+        dispatch(getAllTransactionsThunk());
+    }, [dispatch]);
+
+
     const handleAddPayment = async (data: AddTransactionFormData) => {
         setIsLoading(true);
-        
+    
+        const amountPaid = Number(data.amountPaid); // Assurez-vous que amountPaid est un nombre valide
+        if (isNaN(amountPaid)) {
+            setErrorShowAlert(true); // Montrez un message d'erreur si ce n'est pas un nombre valide
+            setIsLoading(false);
+            return;
+        }
+    
         const paymentData = {
             playerId, // Utiliser l'ID du joueur sélectionné
-            amount: data.amountPaid, // Montant payé
+            PaymentDate,
+            amount: amountPaid, // Montant payé
             invoiceNumber: data.invoiceNumber, // Numéro de la facture
             insurancePayment: data.insurancePaid, // Si l'assurance a été payée ou non
+            newDurationInMonths: data.durationInMonths, // Nouvelle durée d'abonnement
+            newSubscriptionType: data.subscriptionType
         };
     
         try {
             // Effectuer l'appel API pour créer le paiement
-            const res = await dispatch(payTransactionThunk(paymentData)); // Suppose que `createPaymentThunk` est la fonction d'action pour envoyer la requête à l'API
+            const res = await dispatch(payTransactionThunk(paymentData));
     
             if (res.meta.requestStatus === "fulfilled") {
                 setIsLoading(false);
+                dispatch(getAllTransactionsThunk());
                 
                 // Réinitialiser les valeurs du formulaire après paiement
                 reset({
@@ -103,7 +133,6 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
                     insuranceAmount: 0,
                     paymentHistory: [],
                 });
-                
             } else {
                 setIsLoading(false);
             }
@@ -113,45 +142,44 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
         }
     };
     
+    
 
     const handleAddTransaction = async(data:AddTransactionFormData) => {
         setIsLoading(true);
-        
-        const transactionData = {
-            ...data,
-            playerId,
-            PaymentDate,
-            insurancePaymentDate,
-        };
+
+// On utilise la méthode `getTimezoneOffset()` pour obtenir la différence entre l'heure locale et UTC
+const offset = new Date().getTimezoneOffset() * 60000;  // Conversion en millisecondes
+const localPaymentDate = PaymentDate ? new Date(PaymentDate).getTime() - offset : null; // Ajustement de la date locale
+const localInsurancePaymentDate = insurancePaymentDate ? new Date(insurancePaymentDate).getTime() - offset : null;
+
+const transactionData = {
+    ...data,
+    playerId,
+    PaymentDate: localPaymentDate ? new Date(localPaymentDate).toISOString() : null,
+    insurancePaymentDate: localInsurancePaymentDate ? new Date(localInsurancePaymentDate).toISOString() : null,
+    durationInMonths: Number(data.durationInMonths),
+};
+
+      
+    console.log("Données envoyées :", transactionData);
+    
 
         dispatch(createTransactionThunk(transactionData)).then(async (res) => {
-            if (res.meta.requestStatus === "fulfilled" ) {
+        if (res.meta.requestStatus === "fulfilled" ) {
+                dispatch(getAllTransactionsThunk());
                 setIsLoading(false);
-                reset({
-                    playerId: "",
-                    subscriptionType: "",
-                    durationInMonths: 0,
-                    amountPaid: 0,
-                    PaymentDate: null,
-                    insurancePaymentDate: null,
-                    invoiceNumber: "",
-                    paymentStatus: "",
-                    dueDate: null,
-                    insurancePaid: false,
-                    insuranceAmount: 0,
-                    paymentHistory: []
-                });
+                reset();
+                setPaymentDate(null);
+                setInsurancePaymentDate(null);
                 //router.push(setting.routes.Transactions)
             } else {
                 console.log('Erreur lors de la création du transaction :', res);
 
                 setIsLoading(false);
             }
-            reset();
-            setPaymentDate(null);
-            setInsurancePaymentDate(null);
+            
         });
-    }    
+    };
     
     const handlePlayerChange = (value:string) => {
         setPlayerId(value);
@@ -181,10 +209,10 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
                 </select>
             </div>
 
-        
+        <br />
         {actionType === 'create' && (
             <>
-        <form onSubmit={handleSubmitTransaction(handleAddTransaction)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 gap-9 sm:grid-cols-2">
                 <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -480,12 +508,12 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
                 </div>
                 </form>
             
-                                </> )};
+                                </> )}
 
                                 {actionType === 'pay' && (
                                 <>
                                 
-        <form onSubmit={handleSubmitPayment(handleAddPayment)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 gap-9 sm:grid-cols-2">
                 <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -506,6 +534,75 @@ const { handleSubmit: handleSubmitPayment } = useForm<AddTransactionFormData>();
                                                 onChange={handlePlayerChange}
                                                 label="Sélectionner un joueur"
                                             />
+                                        </div> 
+                                    </div>
+                                </div>
+
+                                <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
+                                    <div className="w-full">
+                                        <label
+                                            className="mb-3 block text-sm font-medium text-black dark:text-white"
+                                            htmlFor="firstName"
+                                        > Type d'abonnement </label>
+                                            <div className="relative">
+                                                <span className="absolute left-4.5 top-4">
+                                                    <svg fill="#000001" height="20" width="20" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260.666 260.666">
+                                                        <g>
+	                                                        <path d="M236.666,40.882H24c-13.233,0-24,10.767-24,24v130.902c0,13.233,10.767,24,24,24h212.666c13.233,0,24-10.767,24-24V64.882
+		                                                        C260.666,51.648,249.899,40.882,236.666,40.882z M245.666,195.784c0,4.962-4.037,9-9,9H24c-4.963,0-9-4.038-9-9V64.882
+		                                                        c0-4.962,4.037-9,9-9h212.666c4.963,0,9,4.038,9,9V195.784z"/>
+	                                                        <path d="M216.04,83.703h-68.933c-3.314,0-6,2.687-6,6s2.686,6,6,6h68.933c3.314,0,6-2.687,6-6S219.354,83.703,216.04,83.703z"/>
+	                                                        <path d="M216.04,164.963h-68.933c-3.314,0-6,2.686-6,6c0,3.313,2.686,6,6,6h68.933c3.314,0,6-2.687,6-6
+		                                                        C222.04,167.649,219.354,164.963,216.04,164.963z"/>
+	                                                        <path d="M216.04,118.411h-41.718c-3.313,0-6,2.687-6,6s2.687,6,6,6h41.718c3.314,0,6-2.687,6-6S219.354,118.411,216.04,118.411z"/>
+	                                                        <path d="M216.04,141.686h-41.718c-3.313,0-6,2.687-6,6c0,3.314,2.687,6,6,6h41.718c3.314,0,6-2.686,6-6
+		                                                        C222.04,144.373,219.354,141.686,216.04,141.686z"/>
+	                                                        <path d="M85.163,133.136c17.004,0,30.838-13.839,30.838-30.849c0-17.011-13.834-30.85-30.838-30.85
+		                                                        c-17.009,0-30.847,13.839-30.847,30.85C54.316,119.297,68.154,133.136,85.163,133.136z M85.163,86.438
+		                                                        c8.733,0,15.838,7.11,15.838,15.85c0,8.739-7.104,15.849-15.838,15.849c-8.738,0-15.847-7.11-15.847-15.849
+		                                                        C69.316,93.548,76.425,86.438,85.163,86.438z"/>
+	                                                        <path d="M97.097,138.68H73.415c-16.592,0-30.09,13.497-30.09,30.088v12.961c0,4.142,3.357,7.5,7.5,7.5s7.5-3.358,7.5-7.5v-12.961
+		                                                        c0-8.319,6.77-15.088,15.09-15.088h23.682c8.32,0,15.09,6.768,15.09,15.088v12.961c0,4.142,3.357,7.5,7.5,7.5s7.5-3.358,7.5-7.5
+		                                                        v-12.961C127.187,152.177,113.688,138.68,97.097,138.68z"/>
+                                                        </g>
+                                                    </svg>
+                                                </span>
+                                                <input
+                                                    {...register('subscriptionType')}
+                                                    className="w-full rounded border border-stroke bg-gray py-3 pl-11.5 pr-4.5 text-black focus:border-primary focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                                    type="text"
+                                                    name="subscriptionType"
+                                                    id="subscriptionType"
+                                                    placeholder="Type d'abonnement ( ex: 'Mensuel', '6 mois', '10 mois' )"
+                                                />
+                                            </div>
+                                            {errors.subscriptionType && (
+                                                <p className="text-red-500 text-sm">{errors.subscriptionType.message}</p>
+                                            )}
+                                    </div>
+                                </div>
+
+                                <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
+                                    <div className="w-full">
+                                        <label
+                                            className="mb-3 block text-sm font-medium text-black dark:text-white"
+                                            htmlFor="durationInMonths"
+                                        > Durée de l'abonnement en mois </label>
+                                        <div className="relative">
+                                        <span className="absolute left-4.5 top-4">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 5.5L5 3.5M21 5.5L19 3.5M9 12.5L11 14.5L15 10.5M20 12.5C20 16.9183 16.4183 20.5 12 20.5C7.58172 20.5 4 16.9183 4 12.5C4 8.08172 7.58172 4.5 12 4.5C16.4183 4.5 20 8.08172 20 12.5Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            </span>
+                                            <input
+                                                    {...register('durationInMonths')}
+                                                    className="w-full rounded border border-stroke bg-gray py-3 pl-11.5 pr-4.5 text-black focus:border-primary focus-visible:outline-none dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
+                                                    type="text"
+                                                    name="durationInMonths"
+                                                    id="durationInMonths"
+                                                    placeholder="Durée de l'abonnement en mois ( ex: 1, 6, 10)"
+                                                />
+
                                         </div> 
                                     </div>
                                 </div>
@@ -603,7 +700,7 @@ onClick={handleCancel}
                 
                 </form>
                                 </>
-                                )};
+                                )}
             
         </DefaultLayout>
     )

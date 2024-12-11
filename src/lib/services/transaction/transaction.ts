@@ -45,6 +45,25 @@ export const getTransactionHistoryThunk = createAsyncThunk(
   }
 );
 
+export const getAllTransactionsThunk = createAsyncThunk(
+  "transaction/getAll",  // Unique action type for this thunk
+  async (_, { dispatch, rejectWithValue, fulfillWithValue }) => {
+    try {
+      dispatch(transactionActionStart());
+      const response = await axiosInstance.get("transactions");
+      const data = response.data;
+      if (data) {
+        dispatch(transactionActionSuccess(data));
+        return fulfillWithValue(data);
+      }
+      return response;
+    } catch (error: any) {
+      dispatch(transactionActionFailure(error));
+      return rejectWithValue({ message: "An error occurred while fetching all transactions" });
+    }
+  }
+);
+
 
 export const payTransactionThunk = createAsyncThunk(
   "transaction/pay",

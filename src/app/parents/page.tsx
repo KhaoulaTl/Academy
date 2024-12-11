@@ -6,7 +6,7 @@
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import axiosInstance from "@/config/instanceAxios";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { deleteParentThunk, getAllParentsThunk } from "@/lib/services/parent/par
 import { setting } from "@/config/setting";
 import UpdateParent from "./updateParent/page";
 import { PlayerType } from "@/types/types";
+import { Pagination } from "@mui/material";
 
 interface ParentType {
   _id: string;
@@ -166,6 +167,22 @@ const filteredParents = Array.isArray(parents) ? parents.filter((parent: { first
   return parentName.toLowerCase().includes(searchTerm.toLowerCase());
 }) : [];
 
+const handlePageChange = (event: any, value: SetStateAction<number>) => {
+  setCurrentPage(value);
+};
+
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 5; // Nombre d'éléments par page
+
+// Calcul des indices pour les items de la page actuelle
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentParents = filteredParents.slice(indexOfFirstItem, indexOfLastItem); // Items de la page actuelle
+
+// Total des pages
+const totalPages = Math.ceil(filteredParents.length / itemsPerPage);
+
+
     return (
         <DefaultLayout>
 <Breadcrumb pageName="Parents"/>
@@ -313,7 +330,7 @@ const filteredParents = Array.isArray(parents) ? parents.filter((parent: { first
         </div>
       </div>
 
-      {filteredParents.map((parent: ParentType) => (
+      {currentParents.map((parent: ParentType) => (
           <div
     className={`grid grid-cols-6 sm:grid-cols-6 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-6 2xl:px-7.5 ${
       parents.length - 1 ? "" : "border-b border-stroke dark:border-strokedark"
@@ -376,7 +393,15 @@ const filteredParents = Array.isArray(parents) ? parents.filter((parent: { first
     </div>
   </div>
 ))}
-
+{/* Pagination */}
+<div className="flex justify-end mt-4 mb-4">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </div>
       </div>
 
       {open && selectedParent && (

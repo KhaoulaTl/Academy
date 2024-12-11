@@ -8,7 +8,7 @@ import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { createCategoryThunk, deleteCategoryThunk, getAllCategoriesThunk, update
 import dayjs, { Dayjs } from "dayjs";
 import { useRouter } from "next/navigation";
 import { CategoryType } from "@/types/types";
+import { Pagination } from "@mui/material";
 
 
 interface AddCategoryFormData {
@@ -239,7 +240,22 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
     router.back();
     setErrorShowAlert(false); 
   };
-  
+
+  const handlePageChange = (event: any, value: SetStateAction<number>) => {
+    setCurrentPage(value);
+  };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Nombre d'éléments par page
+
+  // Calcul des indices pour les items de la page actuelle
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCategories = categories.slice(indexOfFirstItem, indexOfLastItem); // Items de la page actuelle
+
+  // Total des pages
+  const totalPages = Math.ceil(categories.length / itemsPerPage);
+
   return (
     <DefaultLayout>
       <Breadcrumb pageName="Tranches d'âge"/>
@@ -475,8 +491,9 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
           </div>
         </div>
       </div>
+      
+      {currentCategories.map((category: CategoryType) => (
 
-      {Array.isArray(categories) && categories.map((category) => (
   <div
     className={`grid grid-cols-3 sm:grid-cols-3 ${
       categories.length - 1 ? "" : "border-b border-stroke dark:border-strokedark"
@@ -532,6 +549,15 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
   </div>
 ))}
 
+ {/* Pagination */}
+          <div className="flex justify-end mt-4 mb-4">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </div>
       </div>
   </div>
   

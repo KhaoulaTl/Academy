@@ -32,6 +32,8 @@ export interface ParentType {
     parentId: string;
     coachId: string;
     skillLevel: string;
+    categoryId: string;
+    
   }
 
   export interface EventType {
@@ -56,4 +58,16 @@ export interface ParentType {
     insuranceAmount: number;
     insurancePaymentDate: Date; 
     paymentHistory: { amount: number; date: Date }[];
+  }
+
+  export interface NotificationType {
+    _id: string;
+    playerId: string;
+    parentId: string;
+    dueDate: Date;
+    isRead: boolean;
+    details: {
+      playerName: string; // Nom complet du joueur
+      parentName: string; // Nom complet du parent
+    };
   }

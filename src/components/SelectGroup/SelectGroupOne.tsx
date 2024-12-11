@@ -1,10 +1,10 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { getAllCategoriesThunk } from "@/lib/services/category/category";
 import { getAllCoachesThunk } from "@/lib/services/coach/coach";
 import { getAllParentsThunk } from "@/lib/services/parent/parent";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { CategoryType, CoachType, ParentType } from "@/types/types";
+import { CoachType, ParentType, PlayerType } from "@/types/types";
+import { getAllPlayersThunk } from "@/lib/services/player/player";
 
 
 interface Option {
@@ -21,7 +21,6 @@ interface SelectGroupOneProps {
 
   const SelectGroupOne: React.FC<SelectGroupOneProps> = ({
     options,
-    value,
     onChange,
     label,
   }) => {
@@ -38,6 +37,10 @@ interface SelectGroupOneProps {
     const { parentDetails } = useAppSelector((state) => state.parent);
     const [parents, setParents] = useState<ParentType | any>(parentDetails);
   
+    const { playerDetails } = useAppSelector((state) => state.player);
+    const [players, setPlayers] = useState<PlayerType | any>(playerDetails);
+  
+
   const fetchParents = useCallback(async () => {
       const response = await dispatch(getAllParentsThunk(undefined));
       if (response.meta.requestStatus === "fulfilled") {
@@ -65,6 +68,24 @@ interface SelectGroupOneProps {
           setDropdownOptions(newOptions);
         }
     }, [dispatch]);
+
+    const fetchPlayers = useCallback(async () => {
+      const response = await dispatch(getAllPlayersThunk(undefined));
+      if (response.meta.requestStatus === "fulfilled") {
+          const players = response.payload;
+          setPlayers(players);
+          const newOptions = players.map((player: PlayerType) => ({
+            value: player._id,
+            text: player.firstName && player.lastName,
+            selected: false,
+          }));
+          setDropdownOptions(newOptions);
+        }
+    }, [dispatch]);
+  
+    useEffect(() => {
+      fetchPlayers();
+    }, [fetchPlayers]);
   
     useEffect(() => {
       fetchCoaches();
@@ -74,10 +95,6 @@ interface SelectGroupOneProps {
       fetchParents();
   }, [fetchParents]);
   
-  
-    const changeTextColor = () => {
-      setIsOptionSelected(true);
-    };
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       setSelectedOption(e.target.value);

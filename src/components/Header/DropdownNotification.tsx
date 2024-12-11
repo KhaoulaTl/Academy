@@ -1,10 +1,61 @@
-import { useState } from "react";
+/* eslint-disable react/jsx-no-undef */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ClickOutside from "@/components/ClickOutside";
+import { deleteNotificationThunk, getAllNotificationsThunk } from "@/lib/services/notification/notification";
+import { NotificationType } from "@/types/types";
+import { useAppDispatch, useAppSelector } from '@/hooks/hooks';
+import { AiOutlineCloseCircle } from 'react-icons/ai';
 
 const DropdownNotification = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { notificationDetails } = useAppSelector((state) => state.notification);
+  const [notifications, setNotifications] = useState<NotificationType | any>(notificationDetails);
+
+  const dispatch = useAppDispatch();
+
+  const fetchNotifications = useCallback(async () => {
+    setIsLoading(true);
+     await dispatch(getAllNotificationsThunk(undefined)).then((res) => {
+        if (res.meta.requestStatus === "fulfilled") {
+          console.log(res.payload);  
+          setNotifications(res?.payload);
+          setIsLoading(false);
+
+        } 
+      });
+}, [dispatch]);
+
+useEffect(() => {
+  fetchNotifications();
+}, [fetchNotifications]);
+
+const handleDeleteNotification = async (notificationId: string) => {
+    // Appeler l'action Redux pour supprimer la notification
+    setIsLoading(true);
+    await dispatch(deleteNotificationThunk(notificationId)).then((res) => {
+
+    if (res.meta.requestStatus === "fulfilled") {
+      // Mettre à jour l'état local si la suppression côté serveur a réussi
+      setNotifications((prevNotifications: NotificationType[]) => prevNotifications.filter((notification) => notification._id !== notificationId
+        )
+      );
+    } 
+    setIsLoading(false);
+  });
+ 
+};
+
+
+
+
+
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -45,75 +96,46 @@ const DropdownNotification = () => {
             className={`absolute -right-27 mt-2.5 flex h-90 w-75 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
           >
             <div className="px-4.5 py-3">
-              <h5 className="text-sm font-medium text-bodydark2">
-                Notification
-              </h5>
+              <h5 className="text-sm font-medium text-bodydark2">Notifications</h5>
             </div>
 
             <ul className="flex h-auto flex-col overflow-y-auto">
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  href="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      Edit your information in a swipe
-                    </span>{" "}
-                    Sint occaecat cupidatat non proident, sunt in culpa qui
-                    officia deserunt mollit anim.
-                  </p>
+              {
+                notifications.map((notification: NotificationType) => (
+                  <li key={notification._id} className="relative">
+                    <div className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4">
+                      <p className="text-sm">
+                        <span className="text-black dark:text-white">
+                          <strong>Parent : </strong>
+                        </span>
+                        {notification.details.parentName}
+                      </p>
+                      
+                      <p className="text-sm">
+                        <span className="text-black dark:text-white">
+                          <strong>Joueur : </strong>
+                        </span>
+                        {notification.details.playerName}
+                      </p>
+                      
+                      <p className="text-xs text-primary">
+                        <span>
+                          <strong>Date d'échéance : </strong>
+                        </span>
+                        {new Date(notification.dueDate).toLocaleDateString()}
+                      </p>
+                      </div>
+                    {/* Icone de suppression */}
+                    <AiOutlineCloseCircle
+                      onClick={() => handleDeleteNotification(notification._id)}
+                      className="absolute top-2 right-2 text-red-600 cursor-pointer"
+                      size={20}
+                      />
 
-                  <p className="text-xs">12 May, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  href="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      It is a long established fact
-                    </span>{" "}
-                    that a reader will be distracted by the readable.
-                  </p>
 
-                  <p className="text-xs">24 Feb, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  href="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      There are many variations
-                    </span>{" "}
-                    of passages of Lorem Ipsum available, but the majority have
-                    suffered
-                  </p>
-
-                  <p className="text-xs">04 Jan, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  href="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      There are many variations
-                    </span>{" "}
-                    of passages of Lorem Ipsum available, but the majority have
-                    suffered
-                  </p>
-
-                  <p className="text-xs">01 Dec, 2024</p>
-                </Link>
-              </li>
+                  </li>
+                ))
+              }
             </ul>
           </div>
         )}
