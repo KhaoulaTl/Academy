@@ -18,6 +18,11 @@ export class PlayerController {
     return this.playerService.findAllPlayers();
   }
 
+  @Get('by-coach/:coachId')
+  async getPlayersByCoach(@Param('coachId') coachId: string) {
+    return await this.playerService.findPlayersByCoach(coachId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<Player> {
     return this.playerService.findPlayerById(id);
@@ -37,5 +42,8 @@ export class PlayerController {
   async findParent(@Param('id') playerId: string) {
     return this.playerService.findParentByPlayer(playerId);
   }
+
+ 
+
 
 }

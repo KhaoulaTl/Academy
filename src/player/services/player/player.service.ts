@@ -125,4 +125,40 @@ export class PlayerService {
     return this.parentService.findById(player.parentId);
   }
 
+  async findPlayersByCoach(coachId: string): Promise<any> {
+    // Récupérer le coach et ses catégories associées
+    const coach = await this.coachService.findOne(coachId);
+    if (!coach) {
+      throw new NotFoundException(`Coach with ID ${coachId} not found`);
+    }
+  
+    // Récupérer les catégories associées au coach
+    const categories = await this.categoryService.getCategories();
+    const associatedCategories = categories.filter(category =>
+      coach.ageCategory.includes(category._id.toString())
+    );
+  
+    if (associatedCategories.length === 0) {
+      throw new NotFoundException(`No categories found for Coach with ID ${coachId}`);
+    }
+  
+    // Récupérer les joueurs pour chaque catégorie
+    const playersByCategory = await Promise.all(
+      associatedCategories.map(async category => {
+        const players = await this.playerModel
+          .find({ categoryId: category._id.toString() })
+          .exec();
+  
+        return {
+          category: category.name,
+          players,
+        };
+      })
+    );
+  
+    return playersByCategory;
+  }  
+  
+  
+
 }
