@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 "use client";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { getAllCategoriesThunk } from "@/lib/services/category/category";

@@ -17,6 +17,7 @@ import UpdateCoach from './updateCoach/page';
 import { setting } from "@/config/setting";
 import { CoachType, PlayerType } from "@/types/types";
 import { Pagination } from "@mui/material";
+import DetailsCoach from "./coachDetails/page";
 
 
 
@@ -44,8 +45,7 @@ const [showSuccessAlert, setSuccessShowAlert] = useState(false);
 const [showErrorAlert, setErrorShowAlert] = useState(false);
 
 const [searchTerm, setSearchTerm] = useState('');
-const [players, setPlayers] = useState<Record<string, PlayerType[]>>({});
-
+const [players, setPlayers] = useState<Record<string, PlayerType[]>>({}); 
 
 const {
   reset: resetUpdateCoachForm,
@@ -58,12 +58,15 @@ const {
 const fetchCoachs = useCallback(async () => {
   setIsLoading(true);
   await dispatch(getAllCoachesThunk(undefined)).then((res) => {
-    if (res.meta.requestStatus === "fulfilled") {
-      setCoaches(res?.payload);
-      setIsLoading(false);
+    if (res.meta.requestStatus === "fulfilled" && Array.isArray(res.payload)) {
+      setCoaches(res.payload);
+    } else {
+      setCoaches([]); // Fallback to an empty array
     }
+    setIsLoading(false);
   });
 }, [dispatch]);
+
 
 
   useEffect(() => {
@@ -72,42 +75,41 @@ const fetchCoachs = useCallback(async () => {
 
 
   
-useEffect(() => {
-  const fetchPlayersForCoaches = async () => {
-    
-    if (Array.isArray(coaches)) {
-      const newPlayers: Record<string, PlayerType[]> = {};
-    
-      for (const coach of coaches) {
-      if (coach.playerIds && coach.playerIds.length > 0) {
-        const players = await fetchPlayers(coach.playerIds);
-        newPlayers[coach._id] = players;
-      } else {
-        console.log(`No players for coach ${coach._id}`);
-      }
+  useEffect(() => {
+    if (Array.isArray(coaches) && coaches.length > 0) {
+      const fetchPlayersForCoaches = async () => {
+        const newPlayers: Record<string, PlayerType[]> = {};
+  
+        for (const coach of coaches) {
+          if (coach.playerIds && coach.playerIds.length > 0) {
+            const playersForCoach = await fetchPlayers(coach.playerIds);
+            newPlayers[coach._id] = playersForCoach;
+          }
+        }
+        console.log("Joueurs associés aux coachs :", newPlayers);
+        setPlayers(newPlayers);
+      };
+  
+      fetchPlayersForCoaches();
     }
-
-    setPlayers(newPlayers);
-  };
-    fetchPlayersForCoaches();
-  }
-}, [coaches, searchTerm]);
-
+  }, [coaches]);
+  
 
 
 const fetchPlayers = async (playerIds: string[]): Promise<PlayerType[]> => {
   try {
     const playerPromises = playerIds.map(async (id) => {
       const res = await axiosInstance.get(`players/${id}`);
+      console.log("Données joueur récupérée :", res.data);
       return res.data;
     });
-
-    const players = await Promise.all(playerPromises);
-    return players;
+    return await Promise.all(playerPromises);
   } catch (error) {
+    console.error("Erreur lors de la récupération des joueurs :", error);
     return [];
   }
 };
+
 
 
 const [category, setCategory] = useState<string[]>([]);  
@@ -124,6 +126,7 @@ const [category, setCategory] = useState<string[]>([]);
   const handleEdit = async (coach: CoachType) => {
     setSelectedCoach(coach);
     setOpen(true);
+    setShowDetails(false);
   
     try {
       const coachData = await axiosInstance.get(`coaches/${coach._id}`);
@@ -156,10 +159,13 @@ const [category, setCategory] = useState<string[]>([]);
   }, [showSuccessAlert, showErrorAlert]);
   
 
-const filteredCoaches = coaches.filter((coach: { firstName: any; lastName: any; }) => {
-  const coachName = `${coach.firstName} ${coach.lastName}`;
-  return coachName.toLowerCase().includes(searchTerm.toLowerCase());
-});
+  const filteredCoaches = Array.isArray(coaches)
+  ? coaches.filter((coach: { firstName: any; lastName: any }) => {
+      const coachName = `${coach.firstName} ${coach.lastName}`;
+      return coachName.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+  : [];
+
 
 const handlePageChange = (event: any, value: SetStateAction<number>) => {
   setCurrentPage(value);
@@ -175,6 +181,35 @@ const currentCoaches = filteredCoaches.slice(indexOfFirstItem, indexOfLastItem);
 
 const totalPages = Math.ceil(filteredCoaches.length / itemsPerPage);
 
+
+const [showDetails, setShowDetails] = useState(false); // Interface de détails
+
+const handleCategoryClick = async (coachId: string) => {
+  try {
+    const response = await axiosInstance.get(`coaches/${coachId}`);
+    const coachData = response.data;
+
+    const playersForCoach = await fetchPlayers(coachData.playerIds);
+    setSelectedCoach({
+      ...coachData,
+      players: playersForCoach,
+    });
+
+    setShowDetails(true);
+    setOpen(false);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des détails du coach :", error);
+  }
+};
+
+
+
+
+const closeInterfaces = () => {
+  setOpen(false);
+  setShowDetails(false);
+  setSelectedCoach(null);
+};
 
     return (
         <DefaultLayout>
@@ -342,10 +377,14 @@ const totalPages = Math.ceil(filteredCoaches.length / itemsPerPage);
       <p className="text-black dark:text-white">{coach.phone}</p>
     </div>
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-      <p className="text-black dark:text-white">{coach.ageCategory.length} catégorie(s)</p>
+      <p className="text-black dark:text-white"     onClick={() => handleCategoryClick(coach._id)} // assuming you want the first category
+
+>{coach.ageCategory.length} catégorie(s)</p>
     </div>
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-      <p className="text-black dark:text-white">{players[coach._id]?.length || 0} joueur(s)</p>
+      <p className="text-black dark:text-white"
+
+      >{players[coach._id]?.length || 0} joueur(s)</p>
     </div>
     
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
@@ -400,13 +439,20 @@ const totalPages = Math.ceil(filteredCoaches.length / itemsPerPage);
           </div>
 
       </div>
+      {showDetails && selectedCoach && (
+        <DetailsCoach
+          coach={selectedCoach}
+          onClose={closeInterfaces} // Bouton pour fermer l'interface
+        />
+      )}
       {open && selectedCoach && (
         <UpdateCoach
           coach={selectedCoach}
-          onClose={() => setOpen(false)}
+          onClose={closeInterfaces} // Bouton pour fermer l'interface
         />
       )}
     </div>
+    
         </DefaultLayout>
     );
 };

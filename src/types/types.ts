@@ -25,6 +25,7 @@ export interface ParentType {
 
 
   export interface PlayerType {
+    ageCategory: string;
     _id: string;
     firstName: string;
     lastName: string;
@@ -50,14 +51,14 @@ export interface ParentType {
     subscriptionType: string;
     durationInMonths: number;
     amountPaid: number;
-    paymentDate: Date;
+    PaymentDate: Date;
     invoiceNumber: string;
     paymentStatus: string;
     dueDate: Date;
     insurancePaid: boolean; 
     insuranceAmount: number;
     insurancePaymentDate: Date; 
-    paymentHistory: { amount: number; date: Date }[];
+    paymentHistory: { amount: number; date: Date; invoiceNumber: string; }[];
   }
 
   export interface NotificationType {

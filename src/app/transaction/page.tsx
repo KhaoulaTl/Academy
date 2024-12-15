@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable react/jsx-no-undef */
@@ -5,13 +6,16 @@
 
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
-import { useCallback, useEffect, useState } from "react";
+import { SetStateAction, useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import React from "react";
 import { getAllTransactionsThunk } from "@/lib/services/transaction/transaction";
-import { TransactionType } from "@/types/types";
+import { PlayerType, TransactionType } from "@/types/types";
 import { setting } from "@/config/setting";
 import Link from "next/link";
+import { getAllPlayersThunk } from "@/lib/services/player/player";
+import { Pagination } from "@mui/material";
+import router, { useRouter } from "next/router";
 
 function TransactionForm() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -20,7 +24,10 @@ function TransactionForm() {
   const { transactionDetails } = useAppSelector((state) => state.transaction);
   const [ transactions, setTransactions] = useState<TransactionType | any>(transactionDetails);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const { playerDetails } = useAppSelector((state) => state.player);
+  const [players, setPlayers] = useState<PlayerType | any>(playerDetails);
+  const [paymentDate, setPaymentDate] = useState<string[]>([]);  
+
   const fetchTransactions = useCallback(async () => {
       setIsLoading(true);
       await dispatch(getAllTransactionsThunk()).then((res) => {
@@ -35,9 +42,66 @@ function TransactionForm() {
       fetchTransactions();
   }, [fetchTransactions]);
 
+  useEffect(() => {
+    dispatch(getAllPlayersThunk(undefined)).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        setPlayers(res.payload);
+      }
+    });
+  }, [dispatch]);
+
+const getPlayerNames = (playerId: string) => {
+    if (!players) {
+      return "Non trouvé";
+    }
+    const playerFlat = Object.values(players).flat() as PlayerType[];
+    const player = playerFlat.find((p) => p._id === playerId);
+    return player ? `${player.firstName} ${player.lastName}` : "Non trouvé";
+  };
+
+  const filteredTransactions = Array.isArray(transactions) ? transactions.filter((transaction: { invoiceNumber:any; }) => {
+    const facture = `${transaction.invoiceNumber}`;
+    return facture.toLowerCase().includes(searchTerm.toLowerCase());
+  }) : [];
+  
+  const handlePageChange = (event: any, value: SetStateAction<number>) => {
+    setCurrentPage(value);
+  };
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Nombre d'éléments par page
+  
+  // Calcul des indices pour les items de la page actuelle
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTransactions = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem); // Items de la page actuelle
+  
+  // Total des pages
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  
+  const formatDate = (date: string | number | Date) => {
+    const formattedDate = new Date(date);
+    if (isNaN(formattedDate.getTime())) {
+      return "Date invalide"; // Fallback text for invalid date
+    }
+    return formattedDate.toLocaleDateString();
+  };
+
+  const handleTransactionClick = async (transactionId: string) => {
+    const router = useRouter();
+    try {
+      console.log(`Navigating to transaction history for ID: ${transactionId}`);
+      router.push(`/transaction/transactionHistory/${transactionId}`);
+    } catch (error) {
+      console.error("Erreur lors de la navigation vers l'historique :", error);
+    }
+  };
+  
+  
+  
   return (
       <DefaultLayout>
-          <Breadcrumb pageName="Transactions"/>
+          <Breadcrumb pageName="Liste de paiements"/>
 
           <div className="mb-20 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -70,7 +134,7 @@ function TransactionForm() {
   type="search"
   value={searchTerm}
   onChange={(e) => setSearchTerm(e.target.value)}
-  placeholder="Rechercher un footballeur"
+  placeholder="Rechercher paiement par numéro de facture"
   className="w-full bg-transparent  py-2 pl-2  font-medium focus:outline-none xl:w-90"
                           />
 
@@ -79,7 +143,7 @@ function TransactionForm() {
 
                   <div className="font-medium border-stroke px-6 py-3 dark:border-strokedark">
               <Link
-                  href={setting.routes.AddPlayer}
+                  href={setting.routes.AddTransaction}
                   className="inline-flex items-center justify-center gap-2 bg-primary px-4 py-4 text-center font-medium text-white hover:bg-opacity-90 lg:px-7 xl:px-6"
               >
               <span>
@@ -104,72 +168,136 @@ function TransactionForm() {
 
 
               <div className="flex flex-col">
-              <div className="grid grid-cols-10 sm:grid-cols-10 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-4 2xl:px-6">
+              <div className="grid grid-cols-11 sm:grid-cols-11 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-4 2xl:px-6">
 
-              <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-                <h5 className="text-sm font-medium uppercase xsm:text-base">
+              <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+                <h5 className="text-sm font-medium  xsm:text-base">
                 Facture
                 </h5>
               </div>
 
-              <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-                <h5 className="text-sm font-medium uppercase xsm:text-base">
+              <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+                <h5 className="text-sm font-medium  xsm:text-base">
                 Joueur
                 </h5>
               </div>
 
-              <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
-            Abonnement
+              <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
+            Type Abonnement
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Montant Payé
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Date de Paiement
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Date d'Échéance
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Statut du Paiement
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Assurance Statut
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Montant Payé Assurance
             </h5>
             </div>
 
-            <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
             Date de Paiement Assurance
+            </h5>
+            </div>
+
+            
+            <div className="hidden items-center  p-3.5 sm:flex xl:p-5">
+            <h5 className="text-sm font-medium  xsm:text-base">
+            Historique des paiements
             </h5>
             </div>
 
               </div>
               </div>
 
+              {currentTransactions.map((transaction: TransactionType) => (
+                <div
+    className={`grid grid-cols-11 sm:grid-cols-11 border-t border-stroke px-4 py-4.5 dark:border-strokedark md:px-6 2xl:px-7.5 ${
+      transactions.length - 1 ? "" : "border-b border-stroke dark:border-strokedark"
+    }`}
+    key={transaction._id}
+  >
+<div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{transaction.invoiceNumber}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{getPlayerNames(transaction.playerId)}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{transaction.subscriptionType}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{transaction.amountPaid}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+    <p className="hidden text-black dark:text-white sm:block">{formatDate(transaction.PaymentDate)}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{formatDate(transaction.dueDate)}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{transaction.paymentStatus}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block"> {transaction.insurancePaid ? "Oui" : "Non"}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{transaction.insuranceAmount}</p>
+    </div>
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+      <p className="hidden text-black dark:text-white sm:block">{formatDate(transaction.insurancePaymentDate)}</p>
+    </div> 
+    <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
+    <button
+                className="text-primary underline"
+                onClick={() => handleTransactionClick(transaction._id)}
+            >
+                Voir l'historique
+            </button>
+    </div>
+  </div>
+              ))}
 
+{/* Pagination */}
+<div className="flex justify-end mt-4 mb-4">
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </div>
 
           </div>
       </DefaultLayout>

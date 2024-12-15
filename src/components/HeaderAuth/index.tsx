@@ -1,6 +1,4 @@
-import Link from "next/link";
 import DarkModeSwitcher from "./DarkModeSwitcher";
-import Image from "next/image";
 
 const HeaderAuth = (props: {
   sidebarOpen: string | boolean | undefined;

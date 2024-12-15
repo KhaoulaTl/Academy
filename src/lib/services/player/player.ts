@@ -91,4 +91,24 @@ export const createPlayerThunk = createAsyncThunk(
       }
     }
   );
+
+  export const findGroupedPlayersThunk = createAsyncThunk(
+    "player/by-coach",
+    async (coachId, { dispatch, rejectWithValue, fulfillWithValue }) => {
+      try {
+        dispatch(playerActionStart());
+        const response = await axiosInstance.get(`players/by-coach/${coachId}`);
+        const data = JSON.parse(JSON.stringify(response.data));
+        if (data) {
+          dispatch(playerActionSuccess(data));
+          return fulfillWithValue(data);
+        }
+        return response;
+      } catch (error: any) {
+        dispatch(playerActionFailure(error));
+        return rejectWithValue({ message: "An error occurred while fetching grouped players" });
+      }
+    }
+  );
+  
   
