@@ -346,6 +346,7 @@ const handleCoachChange = (value: string) => {
     Date de naissance
     </label>
     <DatePickerOne 
+    value={player.birthDate}
     onDateChange={(date) => reset((prev) => ({ ...prev, birthDate: date ? new Date(date) : new Date() }))} 
     defaultValue={player.birthDate instanceof Date ? player.birthDate : player.birthDate ? new Date(player.birthDate) : new Date()} // Check for null before creating a date
     />

@@ -27,19 +27,16 @@ interface User {
   password: string;
   _id?: number;
 }
+
 const Profile = () => {
   const dispatch = useAppDispatch();
   const userId = getCookies("user"); 
-  
   
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   
-  
   const { userDetails } = useAppSelector((state) => state.user);
-  
-
   const [user, setUser] = useState<User | any>(userDetails);
 
   const togglePasswordFields = () => {
@@ -51,13 +48,13 @@ const Profile = () => {
   const handleClickShowPassword = () => {
     setShowPassword((prev) => !prev);
   };
-  
 
   const fetchUser = () => {
     dispatch(getUserThunk(userId)).then((res) => {
       if (res.meta.requestStatus === "fulfilled") setUser(res?.payload);
     });
   };
+
   useEffect(() => {
     fetchUser();
   }, [userId, dispatch]);
@@ -70,14 +67,14 @@ const Profile = () => {
       .email('Format d\'adresse e-mail invalide'),
     password: yup.string()
       .required('Le mot de passe est requis')
-      }).required();
+  }).required();
 
   const {
     register,
     reset,
     handleSubmit: handleSubmitProfile,
     formState: { errors, isSubmitting },
-  } = useForm<FormFields>({resolver: yupResolver(schema)});
+  } = useForm<FormFields>({});
 
   useEffect(() => {
     if (user) {

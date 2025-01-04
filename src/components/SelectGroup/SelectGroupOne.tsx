@@ -29,7 +29,6 @@ interface SelectGroupOneProps {
     const [dropdownOptions, setDropdownOptions] = useState<Option[]>([]);
   
     const [selectedOption, setSelectedOption] = useState<string>("");
-    const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
   
     const { coachDetails } = useAppSelector((state) => state.coach);
     const [coaches, setCoaches] = useState<CoachType | any>(coachDetails);

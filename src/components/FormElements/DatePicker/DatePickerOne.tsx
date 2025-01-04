@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 interface DatePickerOneProps {
   onDateChange: (date: Date | null) => void;
+  value: Date;
   defaultValue?: Date; // Add this line
 }
 

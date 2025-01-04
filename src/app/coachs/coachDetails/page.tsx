@@ -10,7 +10,7 @@ interface DetailsCoachProps {
   onClose: () => void;
 }
 
-const DetailsCoach: React.FC<DetailsCoachProps> = ({ coach }) => {
+const DetailsCoach: React.FC<DetailsCoachProps> = ({ coach, onClose }) => {
   const [players, setPlayers] = useState<PlayerType[]>([]);
   const [categories, setCategories] = useState<{ [id: string]: string }>({});
   const [groupedPlayers, setGroupedPlayers] = useState<{ [category: string]: PlayerType[] }>({});
@@ -114,10 +114,14 @@ const DetailsCoach: React.FC<DetailsCoachProps> = ({ coach }) => {
               )}
             </tbody>
           </table>
+          
         </div>
       ) : (
         <p>Aucun joueur trouvé.</p>
       )}
+      <div>
+            <button className="flex mb-4 mt-4 items-center justify-end rounded-md border border-primary px-4 py-1 text-center font-medium text-primary hover:bg-opacity-90 lg:px-4 xl:px-4" onClick={onClose}>Fermer</button>
+          </div>
     </div>
   );
 };

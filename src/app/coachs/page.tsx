@@ -172,7 +172,7 @@ const handlePageChange = (event: any, value: SetStateAction<number>) => {
 };
 
 const [currentPage, setCurrentPage] = useState(1);
-const itemsPerPage = 5; // Nombre d'éléments par page
+const itemsPerPage = 7; // Nombre d'éléments par page
 
 // Calcul des indices pour les items de la page actuelle
 const indexOfLastItem = currentPage * itemsPerPage;
@@ -377,7 +377,7 @@ const closeInterfaces = () => {
       <p className="text-black dark:text-white">{coach.phone}</p>
     </div>
     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-      <p className="text-black dark:text-white"     onClick={() => handleCategoryClick(coach._id)} // assuming you want the first category
+      <p className=" text-primary underline"     onClick={() => handleCategoryClick(coach._id)} // assuming you want the first category
 
 >{coach.ageCategory.length} catégorie(s)</p>
     </div>
@@ -429,6 +429,7 @@ const closeInterfaces = () => {
         ))}
 
         {/* Pagination */}
+        
         <div className="flex justify-end mt-4 mb-4">
             <Pagination
               count={totalPages}
@@ -442,7 +443,7 @@ const closeInterfaces = () => {
       {showDetails && selectedCoach && (
         <DetailsCoach
           coach={selectedCoach}
-          onClose={closeInterfaces} // Bouton pour fermer l'interface
+          onClose={() => setShowDetails(false)}  // Bouton pour fermer l'interface
         />
       )}
       {open && selectedCoach && (

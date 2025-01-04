@@ -193,7 +193,7 @@ const handlePageChange = (event: any, value: SetStateAction<number>) => {
 };
 
 const [currentPage, setCurrentPage] = useState(1);
-const itemsPerPage = 5; // Nombre d'éléments par page
+const itemsPerPage = 7; // Nombre d'éléments par page
 
 // Calcul des indices pour les items de la page actuelle
 const indexOfLastItem = currentPage * itemsPerPage;
@@ -395,15 +395,8 @@ const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
                     </div>
 
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
-      <Link href="#" onClick={(e) => {
-        e.preventDefault();
-        // Afficher le composant PlayersByCoach pour l'entraîneur sélectionné
-        setCoachId(player.coachId);
-        setShowPlayersByCoach(true);
-      }}>
-        {getCoachNames(player.coachId)}
-      </Link>
-    </div>
+                      <p className="hidden text-black dark:text-white sm:block"> {getCoachNames(player.coachId)}</p>
+                    </div>
 
                     <div className="hidden items-center  p-2.5 sm:flex xl:p-5">
                         <p className="hidden text-black dark:text-white sm:block">{getCategoriesNames(player.categoryId)}</p>

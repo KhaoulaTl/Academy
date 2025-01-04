@@ -83,3 +83,38 @@ export const payTransactionThunk = createAsyncThunk(
     }
   }
 );
+
+  export const deleteTransactionThunk = createAsyncThunk(
+    "transaction/delete",
+    async (id:string, {dispatch, rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.delete(`transactions/${id}`);
+        const data = JSON.parse(JSON.stringify(response.data));
+
+        return response;
+      } catch (error: any) {
+        return rejectWithValue({ message: "An error occurred" });
+      }
+    }
+);
+
+export const getRevenueByPeriodThunk = createAsyncThunk(
+  "transaction/revenue",
+  async (period: 'day' | 'week' | 'month', { dispatch, rejectWithValue, fulfillWithValue }) => {
+    try {
+      console.log(`Fetching revenue for period: ${period}`); // Ajoutez ce log
+      const response = await axiosInstance.get(`transactions/revenue/${period}`);
+      console.log("API response:", response.data); // Ajoutez ce log
+      const data = response.data;
+      if (data) {
+        dispatch(transactionActionSuccess(data));
+        return fulfillWithValue(data);
+      }
+      return response;
+    } catch (error: any) {
+      console.error("Error fetching revenue:", error); // Ajoutez ce log
+      dispatch(transactionActionFailure(error));
+      return rejectWithValue({ message: "An error occurred while fetching revenue" });
+    }
+  }
+);

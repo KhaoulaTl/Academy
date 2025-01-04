@@ -246,7 +246,7 @@ const [endYearUpdate, setEndYearUpdate] = useState<Dayjs | null>(null);
   };
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Nombre d'éléments par page
+  const itemsPerPage = 7; // Nombre d'éléments par page
 
   // Calcul des indices pour les items de la page actuelle
   const indexOfLastItem = currentPage * itemsPerPage;

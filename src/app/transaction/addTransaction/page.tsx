@@ -13,6 +13,7 @@ import { PlayerType, TransactionType } from "@/types/types";
 import SelectGroupOne from "@/components/SelectGroup/SelectGroupOne";
 import DatePickerOne from "@/components/FormElements/DatePicker/DatePickerOne";
 import { createTransactionThunk, getAllTransactionsThunk, payTransactionThunk } from "@/lib/services/transaction/transaction";
+import { setting } from "@/config/setting";
 
 
 interface AddTransactionFormData {
@@ -48,14 +49,25 @@ interface AddTransactionFormData {
     const [actionType, setActionType] = useState('create'); // 'create' or 'pay'
     const [PaymentDate, setPaymentDate] = useState<Date | null>(null);
     const [insurancePaymentDate, setInsurancePaymentDate] = useState<Date | null>(null);
-
+    const [insurancePaid, setInsurancePaid] = useState(false);
     
     const { register, reset, handleSubmit, formState: { errors }, setValue } = useForm<AddTransactionFormData>({
         defaultValues: {
-          playerId: '',
-          
+            playerId: '',
+            subscriptionType: '',
+            durationInMonths: 0,
+            amountPaid: 0,
+            invoiceNumber: '',
+            paymentStatus: '',
+            dueDate: null,
+            insurancePaid: false,
+            insuranceAmount: 0,
+            insurancePaymentDate: null,
+            PaymentDate: null,
+            paymentHistory: [],
         },
-      });
+    });
+    
       
       const onSubmit = async (data: AddTransactionFormData) => {
         if (actionType === 'create') {
@@ -66,24 +78,23 @@ interface AddTransactionFormData {
       };
       
       useEffect(() => {
-        console.log('Transactions reçues du backend :', transactions);
         if (transactions) {
             reset({
-                playerId: transactions.playerId || "",
-                subscriptionType: transactions.subscriptionType || "",
-                durationInMonths: transactions.durationInMonths || "",
-                amountPaid: transactions.amountPaid || "",
-                invoiceNumber: transactions.invoiceNumber || "",
-                paymentStatus: transactions.paymentStatus || "",
-                dueDate: transactions.dueDate ? new Date(transactions.dueDate) : null,  // Vérifiez ici
-                insurancePaid: transactions.insurancePaid || false,
-                insuranceAmount: transactions.insuranceAmount || 0,
+                ...transactions,
+                PaymentDate: transactions.PaymentDate ? new Date(transactions.PaymentDate) : null,
                 insurancePaymentDate: transactions.insurancePaymentDate ? new Date(transactions.insurancePaymentDate) : null,
-                paymentHistory: transactions.paymentHistory || [],
-                PaymentDate: transactions.PaymentDate ? new Date(transactions.PaymentDate) : null
             });
         }
-    }, [transactions]);
+        if (showSuccessAlert || showErrorAlert) {
+            const timer = setTimeout(() => {
+              setSuccessShowAlert(false);
+              setErrorShowAlert(false);
+              setAlertMessage ("");
+            }, 3000); // Alert shows for 2 seconds
+            return () => clearTimeout(timer);
+          }
+    }, [transactions, reset, showSuccessAlert, showErrorAlert]);
+    
     
     
 
@@ -119,7 +130,8 @@ interface AddTransactionFormData {
             if (res.meta.requestStatus === "fulfilled") {
                 setIsLoading(false);
                 dispatch(getAllTransactionsThunk());
-                
+                setAlertMessage("Un nouveau paiement a été effectué avec succès.");
+                setSuccessShowAlert(true);
                 // Réinitialiser les valeurs du formulaire après paiement
                 reset({
                     playerId: "",
@@ -133,11 +145,14 @@ interface AddTransactionFormData {
                     insuranceAmount: 0,
                     paymentHistory: [],
                 });
+
+                router.push(setting.routes.Transactions);
             } else {
                 setIsLoading(false);
             }
         } catch (error) {
-            console.error("Erreur lors du paiement:", error);
+            setAlertMessage("Échec lors du paiement.");
+            setErrorShowAlert(true); 
             setIsLoading(false);
         }
     };
@@ -145,40 +160,48 @@ interface AddTransactionFormData {
     
 
     const handleAddTransaction = async(data:AddTransactionFormData) => {
+        
         setIsLoading(true);
-
-// On utilise la méthode `getTimezoneOffset()` pour obtenir la différence entre l'heure locale et UTC
-const offset = new Date().getTimezoneOffset() * 60000;  // Conversion en millisecondes
-const localPaymentDate = PaymentDate ? new Date(PaymentDate).getTime() - offset : null; // Ajustement de la date locale
-const localInsurancePaymentDate = insurancePaymentDate ? new Date(insurancePaymentDate).getTime() - offset : null;
 
 const transactionData = {
     ...data,
     playerId,
-    PaymentDate: localPaymentDate ? new Date(localPaymentDate).toISOString() : null,
-    insurancePaymentDate: localInsurancePaymentDate ? new Date(localInsurancePaymentDate).toISOString() : null,
+    PaymentDate: PaymentDate ? new Date(PaymentDate).toISOString() : null,
+    insurancePaymentDate: data.insurancePaid ? (insurancePaymentDate ? new Date(insurancePaymentDate).toISOString() : null) : null,
     durationInMonths: Number(data.durationInMonths),
+    insuranceAmount: data.insurancePaid ? Number(data.insuranceAmount) : 0, // Assurez-vous que le montant est 0 si insurancePaid est false
 };
+
+
+if (data.insurancePaid) {
+    transactionData.insurancePaymentDate = insurancePaymentDate ? new Date(insurancePaymentDate).toISOString() : null;
+    transactionData.insuranceAmount = Number(data.insuranceAmount);
+} else {
+    // Si l'assurance n'est pas payée, ne pas inclure ces champs
+    transactionData.insurancePaymentDate = null;
+    transactionData.insuranceAmount = null;
+}
 
       
     console.log("Données envoyées :", transactionData);
     
 
-        dispatch(createTransactionThunk(transactionData)).then(async (res) => {
-        if (res.meta.requestStatus === "fulfilled" ) {
-                dispatch(getAllTransactionsThunk());
-                setIsLoading(false);
-                reset();
-                setPaymentDate(null);
-                setInsurancePaymentDate(null);
-                //router.push(setting.routes.Transactions)
-            } else {
-                console.log('Erreur lors de la création du transaction :', res);
+    dispatch(createTransactionThunk(transactionData)).then(async (res) => {
+        if (res.meta.requestStatus === "fulfilled") {
+            dispatch(getAllTransactionsThunk());
+            setIsLoading(false);
+            reset();
+            setPaymentDate(null);
+            setInsurancePaymentDate(null);
+            setAlertMessage("Une nouvelle transaction a été créé avec succès.");
+            setSuccessShowAlert(true);
+        } else {
+            setAlertMessage("Échec de la création de la transaction.");
+            setErrorShowAlert(true); 
+            setIsLoading(false);
+        }
+    });
 
-                setIsLoading(false);
-            }
-            
-        });
     };
     
     const handlePlayerChange = (value:string) => {
@@ -197,11 +220,53 @@ const transactionData = {
         setErrorShowAlert(false); 
       };
 
-    return (
+      return (
         <DefaultLayout>
             <Breadcrumb pageName="Paiement" />
-           
-            <div className="grid grid-cols-1 gap-9 sm:grid-cols-2">
+            <div className="flex flex-col gap-10">
+{showSuccessAlert && (
+  <div className="flex w-full border-l-6 border-[#34D399] bg-[#34D399] bg-opacity-[15%] px-7 py-8 shadow-md dark:bg-[#1B1B24] dark:bg-opacity-30 md:p-9">
+    <div className="mr-5 flex h-8 w-full max-w-[36px] items-center justify-center rounded-lg bg-[#34D399]">
+      <svg width="15" height="12" viewBox="0 0 15 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.2984 0.826822L15.2868 0.811827L15.2741 0.797751C14.9173 0.401867 14.3238 0.400754 13.9657 0.794406L5.91888 9.45376L2.05667 5.2868C1.69856 4.89287 1.10487 4.89389 0.747996 5.28987C0.417335 5.65675 0.417335 6.22337 0.747996 6.59026L0.747959 6.59029L0.752701 6.59541L4.86742 11.0348C5.14445 11.3405 5.52858 11.5 5.89581 11.5C6.29242 11.5 6.65178 11.3355 6.92401 11.035L15.2162 2.11161C15.5833 1.74452 15.576 1.18615 15.2984 0.826822Z" fill="white" stroke="white"></path>
+      </svg>
+    </div>
+    <div className="w-full">
+      <h5 className="mb-3 text-lg font-semibold text-black dark:text-[#34D399] ">
+        {alertMessage}
+      </h5>
+    </div>
+  </div>
+)}
+ {showErrorAlert && (
+<div className="flex w-full border-l-6 border-[#F87171] bg-[#F87171] bg-opacity-[15%] px-7 py-8 shadow-md dark:bg-[#1B1B24] dark:bg-opacity-30 md:p-9">
+            <div className="mr-5 flex h-9 w-full max-w-[36px] items-center justify-center rounded-lg bg-[#F87171]">
+              <svg
+                width="15"
+                height="12"
+                viewBox="0 0 15 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6.4917 7.65579L11.106 12.2645C11.2545 12.4128 11.4715 12.5 11.6738 12.5C11.8762 12.5 12.0931 12.4128 12.2416 12.2645C12.5621 11.9445 12.5623 11.4317 12.2423 11.1114C12.2422 11.1113 12.2422 11.1113 12.2422 11.1113C12.242 11.1111 12.2418 11.1109 12.2416 11.1107L7.64539 6.50351L12.2589 1.91221L12.2595 1.91158C12.5802 1.59132 12.5802 1.07805 12.2595 0.757793C11.9393 0.437994 11.4268 0.437869 11.1064 0.757418C11.1063 0.757543 11.1062 0.757668 11.106 0.757793L6.49234 5.34931L1.89459 0.740581L1.89396 0.739942C1.57364 0.420019 1.0608 0.420019 0.740487 0.739944C0.42005 1.05999 0.419837 1.57279 0.73985 1.89309L6.4917 7.65579ZM6.4917 7.65579L1.89459 12.2639L1.89395 12.2645C1.74546 12.4128 1.52854 12.5 1.32616 12.5C1.12377 12.5 0.906853 12.4128 0.758361 12.2645L1.1117 11.9108L0.758358 12.2645C0.437984 11.9445 0.437708 11.4319 0.757539 11.1116C0.757812 11.1113 0.758086 11.111 0.75836 11.1107L5.33864 6.50287L0.740487 1.89373L6.4917 7.65579Z"
+                  fill="#ffffff"
+                  stroke="#ffffff"
+                ></path>
+              </svg>
+            </div>
+            <div className="w-full">
+              <h5 className="mb-3 font-semibold text-[#B45454]">
+                {alertMessage}
+              </h5>
+              
+            </div>
+          </div>
+)}
+        </div>
+        <br />
+
+            <div className="w-full sm:w-5/6">
 
                 <select value={actionType} onChange={(e) => setActionType(e.target.value)} className={`w-full rounded border border-stroke bg-transparent px-6 py-3 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input `}>
                     <option value="create" className="dark:bg-boxdark">Créer une transaction</option>
@@ -213,16 +278,16 @@ const transactionData = {
         {actionType === 'create' && (
             <>
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 gap-9 sm:grid-cols-2">
-                <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+        <div className="w-full sm:w-5/6">
+        <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                         <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
                             <h3 className="font-medium text-black dark:text-white"> Paiement d'abonnement </h3>
                         </div>
                         <div className="p-7">
                                 <div className="flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Sélectionner un joueur </label>
@@ -238,8 +303,8 @@ const transactionData = {
                                 </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Type d'abonnement </label>
@@ -282,8 +347,8 @@ const transactionData = {
                                 </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="durationInMonths"
                                         > Durée de l'abonnement en mois </label>
@@ -316,7 +381,10 @@ const transactionData = {
                             Date de paiement d'abonnement
                             </label>
                             
-                            <DatePickerOne onDateChange={setPaymentDate} />
+                            <DatePickerOne 
+                                value={PaymentDate}
+                                onDateChange={(date) => setPaymentDate(date)}
+                            />
                         </div>
                         {errors.PaymentDate && (
                             <p className="text-red-500 text-sm">{errors.PaymentDate.message}</p>
@@ -325,8 +393,8 @@ const transactionData = {
                     </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Montant payé </label>
@@ -355,8 +423,8 @@ const transactionData = {
                                 </div>
                                 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="invoiceNumber"
                                         > Numéro de facture </label>
@@ -386,28 +454,11 @@ const transactionData = {
                                 </div>
                                
 
-                
-                </div>
-                            
-
-                            
-
-                    </div>
-                </div>
-
-
-                <div className="flex flex-col gap-9">
-                    <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                        <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
-                            <h3 className="font-medium text-black dark:text-white"> Paiement d'assurance </h3>
-                        </div>
-
-                        <div className="p-7">
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             htmlFor="insurancePaid"
-                                            className="flex cursor-pointer select-none items-center"
+                                            className="mb-3 flex cursor-pointer select-none items-center font-bold"
                                         >
                                             <div className="relative">
                                                 <input
@@ -415,12 +466,19 @@ const transactionData = {
                                                     id="insurancePaid"
                                                     className="sr-only"
                                                     {...register('insurancePaid')}
+                                                    name="insurancePaid"
                                                     checked={isChecked}
-                                                    onChange={() => {
-                                                        setIsChecked(!isChecked); // Mise à jour de l'état local
-                                                        setValue('insurancePaid', !isChecked);
+                                                    onChange={(e) => {
+                                                        setIsChecked(e.target.checked);
+                                                        setInsurancePaid(e.target.checked)
+                                                        setValue('insurancePaid', e.target.checked); // Met à jour la valeur du formulaire
+                                                        if (!e.target.checked) {
+                                                            setValue('insuranceAmount', 0);
+                                                            setInsurancePaymentDate(null);
+                                                        }
                                                     }}
-                                                /><div
+                                                />
+                                                <div
                                                 className={`mr-4 flex h-5 w-5 items-center justify-center rounded border ${
                                                   isChecked && "border-primary bg-gray dark:bg-transparent"
                                                 }`}
@@ -435,17 +493,22 @@ const transactionData = {
                                     </div>
                                 </div>
 
+                                {insurancePaid && (
+    <>
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
 
-                        <div className="w-full">
-                            <label
+                                <div className="w-full">
+                                <label
                                 className="mb-3 block text-sm font-medium text-black dark:text-white"
                                 htmlFor="insurancePaymentDate"
                             >
                             Date de paiement d'assurance
                             </label>
                             
-                            <DatePickerOne onDateChange={setInsurancePaymentDate} />
+                            <DatePickerOne 
+                                value={insurancePaymentDate}
+                                onDateChange={(date) => setInsurancePaymentDate(date)}
+                            />
                         </div>
                         {errors.insurancePaymentDate && (
                             <p className="text-red-500 text-sm">{errors.insurancePaymentDate.message}</p>
@@ -454,8 +517,8 @@ const transactionData = {
                     </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Montant assurance </label>
@@ -475,6 +538,7 @@ const transactionData = {
                                                     name="insuranceAmount"
                                                     id="insuranceAmount"
                                                     placeholder="Montant assurance"
+                                                    disabled={!isChecked}
                                                 />
                                             </div>
                                             {errors.insuranceAmount && (
@@ -482,30 +546,36 @@ const transactionData = {
                                             )}
                                     </div>
                                 </div>
+                                </>
+                            )}
+                 <div className="flex justify-end gap-4.5 mt-5">
 
-                                <div className="flex justify-end gap-4.5 mt-5">
+<button
+type="submit"
+className="flex justify-center rounded bg-primary px-6 py-2 font-medium text-gray hover:bg-opacity-90"
+disabled={isLoading}
+>
+{isLoading ? "Chargement..." : "Créer une transaction"}
+</button>
+<button
+className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
+type="submit"
+disabled={isLoading}
+onClick={handleCancel}
+>
+{isLoading ? "Chargement..." : "Annuler"}
+</button>
+</div>
+                </div>
 
-                    <button
-                    type="submit"
-                    className="flex justify-center rounded bg-primary px-6 py-2 font-medium text-gray hover:bg-opacity-90"
-                    disabled={isLoading}
-                    >
-                    {isLoading ? "Chargement..." : "Créer une transaction"}
-                    </button>
-                    <button
-                    className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
-                    type="submit"
-                    disabled={isLoading}
-                    onClick={handleCancel}
-                    >
-                    {isLoading ? "Chargement..." : "Annuler"}
-                    </button>
-                </div>
-                        </div>
-                    </div>
-                    
+                                                           
                     </div>
                 </div>
+
+
+            </div>
+
+               
                 </form>
             
                                 </> )}
@@ -514,8 +584,8 @@ const transactionData = {
                                 <>
                                 
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 gap-9 sm:grid-cols-2">
-                <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+        <div className="w-full sm:w-5/6">
+        <div className="flex flex-col gap-9 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                         <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
                             <h3 className="font-medium text-black dark:text-white"> Paiement d'abonnement </h3>
@@ -539,8 +609,8 @@ const transactionData = {
                                 </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Type d'abonnement </label>
@@ -583,8 +653,8 @@ const transactionData = {
                                 </div>
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="durationInMonths"
                                         > Durée de l'abonnement en mois </label>
@@ -609,8 +679,8 @@ const transactionData = {
 
 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="firstName"
                                         > Montant payé </label>
@@ -639,8 +709,8 @@ const transactionData = {
                                 </div>
                                 
                                 <div className="mb-5.5 flex flex-col gap-5.5 sm:flex-row">
-                                    <div className="w-full">
-                                        <label
+                                <div className="w-full">
+                                <label
                                             className="mb-3 block text-sm font-medium text-black dark:text-white"
                                             htmlFor="invoiceNumber"
                                         > Numéro de facture </label>
@@ -676,7 +746,7 @@ type="submit"
 className="flex justify-center rounded bg-primary px-6 py-2 font-medium text-gray hover:bg-opacity-90"
 disabled={isLoading}
 >
-{isLoading ? "Chargement..." : "Créer une transaction"}
+{isLoading ? "Chargement..." : "Effectuer paiement"}
 </button>
 <button
 className="flex justify-center rounded border border-stroke px-6 py-2 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"

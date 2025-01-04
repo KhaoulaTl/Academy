@@ -58,7 +58,7 @@ export interface ParentType {
     insurancePaid: boolean; 
     insuranceAmount: number;
     insurancePaymentDate: Date; 
-    paymentHistory: { amount: number; date: Date; invoiceNumber: string; }[];
+    paymentHistory: { amount: number; date: Date; invoiceNumber: string; dueDate: Date; }[];
   }
 
   export interface NotificationType {
