@@ -7,7 +7,7 @@ services:
     ports:
       - "3001:3000"  # Expose port 3001 for your frontend (Next.js)
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:3000  # API URL for backend (NestJS)
+      - NEXT_PUBLIC_API_URL=http://backend:3008  # API URL for backend (NestJS)
     depends_on:
       - backend  # Ensure the backend is up before the frontend
 
