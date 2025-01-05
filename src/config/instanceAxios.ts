@@ -1,7 +1,9 @@
 import { getCookies } from "@/utils/functions";
 import axios from "axios";
+
+const baseURL = process.env.REACT_APP_API_BASE_URL
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:3001/api/", // Replace with your API base URL
+  baseURL, 
 });
 // Request interceptor
 axiosInstance.interceptors.request.use(
