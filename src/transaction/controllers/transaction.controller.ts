@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete } from '@nestjs/common';
 import { Transaction } from '../schemas/transaction.schema';
 import { TransactionService } from '../services/transaction.service';
 
@@ -68,10 +68,21 @@ async payTransaction(
     return this.transactionService.getAllTransactions();
   }
 
-  @Get('test-overdue/:playerId')
-async testOverduePayments(@Param('playerId') playerId: string) {
-  await this.transactionService.testOverduePayments(playerId); // Déléguez au service
-  return { message: 'Test terminé.' };
+ // @Get('test-overdue/:playerId')
+//async testOverduePayments(@Param('playerId') playerId: string) {
+ // await this.transactionService.testOverduePayments(playerId); // Déléguez au service
+ // return { message: 'Test terminé.' };
+//}
+
+@Delete(':id')
+async remove(@Param('id') id: string): Promise<void>{
+  return this.transactionService.deleteTransaction(id);
+}
+
+@Get('revenue/:period')
+async getRevenueByPeriod(@Param('period') period: 'day' | 'week' | 'month'): Promise<{ period: string, totalRevenue: number }> {
+  const totalRevenue = await this.transactionService.calculateRevenueByPeriod(period);
+  return { period, totalRevenue };
 }
 
 

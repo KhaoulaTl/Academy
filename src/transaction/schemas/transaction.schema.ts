@@ -38,7 +38,7 @@ export class Transaction extends Document {
   insurancePaymentDate: Date;  // Date de paiement de l'assurance
 
   @Prop({ default: [] })
-  paymentHistory: { amount: number; date: Date, invoiceNumber: string }[];  // Historique des paiements
+  paymentHistory: { amount: number; date: Date, invoiceNumber: string, dueDate: Date }[];  // Historique des paiements
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

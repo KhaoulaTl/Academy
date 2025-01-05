@@ -12,5 +12,5 @@ export interface ITransaction {
     insurancePaid: boolean; 
     insuranceAmount: number;
     insurancePaymentDate: Date; 
-    paymentHistory: { amount: number; date: Date, invoiceNumber: string }[];
+    paymentHistory: { amount: number; date: Date, invoiceNumber: string, dueDate: Date }[];
 }

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: "image name in docker hub registry "  # Replace with your pre-built Next.js image
+    container_name: academy-frontend
+    ports:
+      - "3001:3000"  # Expose port 3001 for your frontend (Next.js)
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3000  # API URL for backend (NestJS)
+    depends_on:
+      - backend  # Ensure the backend is up before the frontend
+
+  backend:
+    image: <your-nestjs-image>  # Replace with your pre-built NestJS image
+    container_name: academy-backend
+    ports:
+      - "3008:3000"  # Expose port 3000 for your backend (NestJS)
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/mydb  # MongoDB connection URI
+    depends_on:
+      - mongo  # Ensure MongoDB is up before the backend
+
+  mongo:
+    image: mongo:latest  # Use the official MongoDB image from Docker Hub
+    container_name: mongo-db
+    ports:
+      - "27017:27017"  # Expose MongoDB's default port
+    volumes:
+      - mongo-data:/data/db  # Persist MongoDB data across restarts
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin  # MongoDB username
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword  # MongoDB password
+
+volumes:
+  mongo-data:
+    driver: local  # Local volume to store MongoDB data

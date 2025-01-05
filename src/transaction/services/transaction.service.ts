@@ -22,7 +22,7 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.intervalId = setInterval(async () => {
       await this.executePeriodicOverdueCheck();
-    }, 24 * 60 * 60 * 1000); // Exécution toutes les 24 heures
+    }, 4 * 60 * 60 * 1000); // Exécution toutes les 24 heures
   }
 
   // Nettoyage pour éviter les fuites de mémoire
@@ -66,7 +66,7 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy {
       invoiceNumber,
       insuranceAmount,
       insurancePaid,
-      paymentHistory: [{ amount: amountPaid, date: PaymentDate, invoiceNumber }], // Historique avec le paiement initial
+      paymentHistory: [{ amount: amountPaid, date: PaymentDate, invoiceNumber, dueDate }], // Historique avec le paiement initial
       PaymentDate: new Date(PaymentDate).toISOString(),
       insurancePaymentDate: new Date(insurancePaymentDate).toISOString(),
       dueDate: this.calculateDueDate(new Date(PaymentDate), durationInMonths),
@@ -93,8 +93,11 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException('Transaction not found for this player.');
     }
   
+    // Calculer la nouvelle date d'échéance
+    const updatedDueDate = this.calculateDueDate(transaction.dueDate, transaction.durationInMonths);
+
     // Ajout du paiement à l'historique
-    transaction.paymentHistory.push({ amount, date: new Date(), invoiceNumber });
+    transaction.paymentHistory.push({ amount, date: new Date(), invoiceNumber, dueDate: updatedDueDate  });
     transaction.amountPaid += amount;
     transaction.PaymentDate = new Date();
   
@@ -141,20 +144,38 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy {
   }
   
 // Méthode existante pour tester les paiements en retard pour un joueur
-  async testOverduePayments(playerId: string) {
-    const transaction = await this.transactionModel.findOne({ playerId });
-    if (transaction) {
-      transaction.dueDate = new Date(Date.now() - 86400000); // Date dépassée
+private async testOverduePayments(playerId: string) {
+  // Récupérer toutes les transactions pour ce joueur
+  const transactions = await this.transactionModel.find({ playerId }).exec();
+
+  for (const transaction of transactions) {
+    console.log(`Vérification de la transaction : ${transaction._id}`);
+
+    // Convertir la date d'échéance et la comparer avec la date actuelle
+    const today = new Date();
+    const dueDate = new Date(transaction.dueDate);
+
+    // Si la date d'échéance est dépassée ET que le paiement est marqué comme "Payé"
+    if (dueDate < today && transaction.paymentStatus === 'Payé') {
+      console.log(`Paiement en retard détecté pour la transaction ${transaction._id}`);
+
+      // Mise à jour du statut de la transaction
       transaction.paymentStatus = 'Impayé';
       await transaction.save();
+      console.log(`Statut mis à jour pour la transaction ${transaction._id}`);
 
-      const player = await this.playerModel.findById(transaction.playerId).populate('parentId');
+      // Vérifier le joueur associé et envoyer une notification
+      const player = await this.playerModel.findById(playerId).populate('parentId').exec();
       if (player && player.parentId) {
-        const parent = player.parentId as any;
-        await this.createNotification(transaction, player, parent);
+        await this.createNotification(transaction, player, player.parentId);
       }
+    } else {
+      // Si la date n'est pas dépassée, aucune action à prendre
+      console.log(`Aucune mise à jour nécessaire pour la transaction ${transaction._id}`);
     }
   }
+}
+
 
   private async createNotification(transaction: Transaction, player: Player, parent: any) {
     const notification = new this.notificationModel({
@@ -171,6 +192,58 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy {
     });
 
     await notification.save();
+  }
+
+  async deleteTransaction(id: string) : Promise<void> {
+    const result = await this.transactionModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    }
+  }
+
+  async calculateRevenueByPeriod(period: 'day' | 'week' | 'month'): Promise<number> {
+    const transactions = await this.transactionModel.find().exec();
+    
+    const now = new Date();
+    let startDate: Date;
+    
+    // Déterminer la date de début en fonction de la période
+    if (period === 'day') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Début de la journée
+    } else if (period === 'week') {
+      const firstDayOfWeek = now.getDate() - now.getDay(); // Dimanche précédent
+      startDate = new Date(now.getFullYear(), now.getMonth(), firstDayOfWeek); // Lundi de la semaine
+    } else if (period === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Premier jour du mois
+    } else {
+      throw new Error('Invalid period. Allowed values: day, week, month.');
+    }
+    
+    let totalRevenue = 0;
+    
+    // Parcourir chaque transaction et son historique des paiements
+    for (const transaction of transactions) {
+      for (const payment of transaction.paymentHistory) {
+        const paymentDate = new Date(payment.date);
+        
+        // Vérifier si le paiement est dans la plage de dates
+        if (paymentDate >= startDate && paymentDate <= now) {
+          // Convertir le montant en nombre en gérant le typage
+          const paymentAmount = typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount;
+          
+          // Calculer le revenu en fonction de la période
+          if (period === 'day' && paymentDate.getDate() === now.getDate()) {
+            totalRevenue += paymentAmount;
+          } else if (period === 'week' && paymentDate >= startDate && paymentDate <= now) {
+            totalRevenue += paymentAmount;
+          } else if (period === 'month' && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear()) {
+            totalRevenue += paymentAmount;
+          }
+        }
+      }
+    }
+  
+    return totalRevenue;
   }
   
 }
